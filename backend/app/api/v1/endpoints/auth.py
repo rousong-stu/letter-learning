@@ -44,7 +44,7 @@ async def login(
     user_agent = request.headers.get("user-agent")
     ip_address = request.client.host if request.client else None
 
-    async with session.begin():
+    try:
         token, _ = await auth_service.issue_token_pair(
             session,
             user=user,
@@ -52,6 +52,10 @@ async def login(
             user_agent=user_agent,
             ip_address=ip_address,
         )
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
 
     return success_response(TokenData(token=token).model_dump(), msg="登录成功")
 
@@ -63,28 +67,32 @@ async def register(
     session: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
     try:
-        async with session.begin():
-            user = await auth_service.register_user(
-                session,
-                username=payload.username,
-                password=payload.password,
-                phone=payload.phone,
-                email=payload.email,
-                assign_roles=["student"],
-            )
-            await session.refresh(user, attribute_names=["roles"])
-            roles = auth_service.format_role_names(user.roles)
-            user_agent = request.headers.get("user-agent")
-            ip_address = request.client.host if request.client else None
-            token, _ = await auth_service.issue_token_pair(
-                session,
-                user=user,
-                roles=roles,
-                user_agent=user_agent,
-                ip_address=ip_address,
-            )
+        user = await auth_service.register_user(
+            session,
+            username=payload.username,
+            password=payload.password,
+            phone=payload.phone,
+            email=payload.email,
+            assign_roles=["student"],
+        )
+        await session.refresh(user, attribute_names=["roles"])
+        roles = auth_service.format_role_names(user.roles)
+        user_agent = request.headers.get("user-agent")
+        ip_address = request.client.host if request.client else None
+        token, _ = await auth_service.issue_token_pair(
+            session,
+            user=user,
+            roles=roles,
+            user_agent=user_agent,
+            ip_address=ip_address,
+        )
+        await session.commit()
     except ValueError as exc:
+        await session.rollback()
         return error_response(str(exc), code=400)
+    except Exception:
+        await session.rollback()
+        raise
 
     return success_response(TokenData(token=token).model_dump(), msg="注册成功")
 
@@ -114,8 +122,12 @@ async def logout(
 
     token_id = payload.get("jti")
     if token_id:
-        async with session.begin():
+        try:
             await auth_service.revoke_token(session, token_id)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     return success_response(msg="退出成功")
 
@@ -147,7 +159,7 @@ async def refresh_token(
 
     await session.refresh(user, attribute_names=["roles"])
     roles = auth_service.format_role_names(user.roles)
-    async with session.begin():
+    try:
         await auth_service.revoke_token(session, token_id)
         token_value, _ = await auth_service.issue_token_pair(
             session,
@@ -156,6 +168,10 @@ async def refresh_token(
             user_agent=None,
             ip_address=None,
         )
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
 
     return success_response(TokenData(token=token_value).model_dump(), msg="刷新Token成功")
 

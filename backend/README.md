@@ -70,3 +70,33 @@ poetry run pytest
 - 生产环境需结合反向代理（Nginx/Caddy）处理 HTTPS 与静态资源缓存。
 - 配置日志采集、性能监控、异常告警，为后续业务扩张提供保障。
 
+## 验证与运维流程
+
+### 运行服务
+
+```bash
+cd backend
+poetry install
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 重置管理员密码
+
+如管理员密码被修改，可在 MySQL 中执行以下脚本恢复为默认 `admin123`：
+
+```sql
+SOURCE /path/to/repo/backend/sql/reset_admin_password.sql;
+```
+
+其中 `/path/to/repo` 替换为仓库实际路径。
+
+### 快速校验接口
+
+脚本 `scripts/check_auth.py` 支持一次性验证登录、获取用户信息、令牌刷新与注销流程：
+
+```bash
+poetry run python scripts/check_auth.py --username admin --password admin123
+```
+
+若服务地址调整，可加 `--base-url http://your-host:port`。
+

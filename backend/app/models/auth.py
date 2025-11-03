@@ -278,8 +278,8 @@ class AuditLog(Base):
     user_agent: Mapped[Optional[str]] = mapped_column(
         String(512), nullable=True, comment="客户端 UA"
     )
-    metadata: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True, comment="额外元数据"
+    extra: Mapped[Optional[dict]] = mapped_column(
+        "metadata", JSON, nullable=True, comment="额外元数据"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -291,4 +291,3 @@ class AuditLog(Base):
     user: Mapped[Optional["User"]] = relationship(
         "User", back_populates="audit_logs", lazy="joined"
     )
-

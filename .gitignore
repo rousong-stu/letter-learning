@@ -1,0 +1,33 @@
+# 通用忽略
+.DS_Store
+Thumbs.db
+*.log
+
+# Python / Poetry
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# Node / 前端
+letter-learning-ui/node_modules/
+letter-learning-ui/.cache/
+letter-learning-ui/dist/
+
+# 编辑器配置
+.idea/
+.vscode/
+
