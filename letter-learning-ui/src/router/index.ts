@@ -151,6 +151,48 @@ export const asyncRoutes: VabRouteRecord[] = [
         ],
     },
     {
+        path: '/home-preview',
+        name: 'HomePreviewRoot',
+        component: Layout,
+        meta: {
+            title: '首页-ceshi',
+            icon: 'book-open-line',
+        },
+        children: [
+            {
+                path: 'index',
+                name: 'HomePreview',
+                component: () => import('@/views/studentHome/index.vue'),
+                meta: {
+                    title: '首页-ceshi',
+                    icon: 'book-open-line',
+                    noClosable: true,
+                },
+            },
+        ],
+    },
+    {
+        path: '/word-story',
+        name: 'WordStoryRoot',
+        component: Layout,
+        meta: {
+            title: 'AI 词汇短文',
+            icon: 'book-open-line',
+        },
+        children: [
+            {
+                path: 'index',
+                name: 'WordStory',
+                component: () => import('@/views/wordStory/index.vue'),
+                meta: {
+                    title: 'AI 词汇短文',
+                    icon: 'book-open-line',
+                    noClosable: true,
+                },
+            },
+        ],
+    },
+    {
         path: '/vab',
         name: 'Vab',
         component: Layout,

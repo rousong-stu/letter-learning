@@ -15,6 +15,7 @@ from app.core.config import get_settings  # noqa: E402
 from app.models import Base  # noqa: E402
 from app.models import user as user_models  # noqa: F401,E402
 from app.models import auth as auth_models  # noqa: F401,E402
+from app.models import word_story as word_story_models  # noqa: F401,E402
 
 config = context.config
 
@@ -22,7 +23,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.async_database_url)
 
 target_metadata = Base.metadata
 
@@ -70,4 +71,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     asyncio.run(run_migrations_online())
-

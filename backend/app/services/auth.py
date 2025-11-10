@@ -32,14 +32,11 @@ async def register_user(
     *,
     username: str,
     password: str,
-    phone: str | None = None,
     email: str | None = None,
     assign_roles: Iterable[str] | None = None,
 ) -> User:
     if await user_repo.get_user_by_username(session, username):
         raise ValueError("用户名已存在")
-    if phone and await user_repo.get_user_by_phone(session, phone):
-        raise ValueError("手机号已被占用")
     if email and await user_repo.get_user_by_email(session, email):
         raise ValueError("邮箱已被占用")
 
@@ -49,13 +46,19 @@ async def register_user(
         session,
         username=username,
         password_hash=password_hash,
-        phone=phone,
         email=email,
         display_name=username,
     )
+    user.password_updated_at = datetime.utcnow()
+    await user_repo.add_password_history(
+        session,
+        user_id=user.id,
+        password_hash=password_hash,
+        changed_by=user.id,
+    )
 
     if assign_roles:
-        await user_repo.assign_roles(session, user, assign_roles)
+        await user_repo.replace_user_roles(session, user, assign_roles)
     return user
 
 
@@ -85,6 +88,7 @@ async def issue_token_pair(
         user_agent=user_agent,
         ip_address=ip_address,
     )
+    user.last_login_at = datetime.utcnow()
     return token, refresh_token_record
 
 
@@ -103,4 +107,3 @@ def format_role_names(roles: Iterable[Role]) -> list[str]:
     for role in roles:
         result.append(mapping.get(role.slug, role.slug.title()))
     return result
-

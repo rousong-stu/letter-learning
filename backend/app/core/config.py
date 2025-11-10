@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,6 +26,16 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30
 
     log_level: str = "INFO"
+    media_directory: str = "uploads"
+    media_url: str = "/static"
+
+    coze_api_base: str = "https://api.coze.cn"
+    coze_api_token: str | None = None
+    coze_bot_id: str | None = None
+    coze_user_prefix: str = "ll-user"
+    coze_poll_interval_seconds: float = 1.2
+    coze_poll_timeout_seconds: int = 90
+    coze_request_timeout_seconds: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -44,9 +55,13 @@ class Settings(BaseSettings):
             f"{self.db_host}:{self.db_port}/{self.db_name}"
         )
 
+    @computed_field
+    def media_path(self) -> str:
+        base_path = Path(__file__).resolve().parents[2]
+        return str((base_path / self.media_directory).resolve())
+
 
 @lru_cache
 def get_settings() -> Settings:
     """以单例形式提供配置对象。"""
     return Settings()
-

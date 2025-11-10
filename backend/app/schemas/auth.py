@@ -13,11 +13,19 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     username: str = Field(..., description="用户名")
     password: str = Field(..., description="密码")
-    phone: Optional[str] = Field(None, description="手机号")
-    phone_code: Optional[str] = Field(None, alias="phoneCode", description="手机验证码")
-    email: Optional[EmailStr] = Field(None, description="邮箱")
+    password_confirm: str = Field(..., alias="passwordConfirm", description="确认密码")
+    invite_code: str = Field(..., alias="inviteCode", description="邀请码")
+    email: EmailStr = Field(..., description="邮箱")
 
-    model_config = {"populate_by_name": True}
+    model_config = {"populate_by_name": True, "json_schema_extra": {"examples": [
+        {
+            "username": "new_user",
+            "password": "123456",
+            "passwordConfirm": "123456",
+            "inviteCode": "letter-learning",
+            "email": "new_user@example.com",
+        }
+    ]}}
 
 
 class TokenData(BaseModel):
@@ -29,4 +37,3 @@ class UserInfoData(BaseModel):
     avatar: str
     roles: List[str]
     permissions: List[str]
-

@@ -52,6 +52,9 @@ poetry run alembic revision --autogenerate -m "描述信息"
 
 # 应用迁移
 poetry run alembic upgrade head
+
+# 如果只需将现有数据库标记到最新版本（不执行迁移），可在 backend 目录运行：
+bash scripts/db_stamp_head.sh
 ```
 
 首个迁移将与 `initial_schema.sql` 保持一致，后续表结构调整请新增迁移脚本。
@@ -99,4 +102,3 @@ poetry run python scripts/check_auth.py --username admin --password admin123
 ```
 
 若服务地址调整，可加 `--base-url http://your-host:port`。
-

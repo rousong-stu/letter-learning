@@ -10,15 +10,25 @@
                 <el-input v-model.trim="form.username" />
             </el-form-item>
             <el-form-item label="密码" prop="password">
-                <el-input v-model.trim="form.password" type="password" />
+                <el-input
+                    v-model.trim="form.password"
+                    :placeholder="title === '编辑' ? '不修改请留空' : '请输入密码'"
+                    autocomplete="new-password"
+                    type="password"
+                />
             </el-form-item>
             <el-form-item label="邮箱" prop="email">
-                <el-input v-model.trim="form.email" />
+                <el-input
+                    v-model.trim="form.email"
+                    type="email"
+                    placeholder="请输入邮箱"
+                />
             </el-form-item>
             <el-form-item label="角色" prop="roles">
                 <el-checkbox-group v-model="form.roles">
-                    <el-checkbox label="admin" value="admin" />
-                    <el-checkbox label="editor" value="editor" />
+                    <el-checkbox label="admin" value="admin">管理员</el-checkbox>
+                    <el-checkbox label="teacher" value="teacher">教师</el-checkbox>
+                    <el-checkbox label="student" value="student">学生</el-checkbox>
                 </el-checkbox-group>
             </el-form-item>
         </el-form>
@@ -38,10 +48,20 @@
         setup(props, { emit }) {
             const $baseMessage = inject('$baseMessage')
 
+            const validatePassword = (rule, value, callback) => {
+                if (!state.form.id && !value) {
+                    callback(new Error('请输入密码'))
+                } else callback()
+            }
+
             const state = reactive({
                 formRef: null,
                 form: {
+                    id: undefined,
                     roles: [],
+                    username: '',
+                    password: '',
+                    email: '',
                 },
                 rules: {
                     username: [
@@ -52,11 +72,7 @@
                         },
                     ],
                     password: [
-                        {
-                            required: true,
-                            trigger: 'blur',
-                            message: '请输入密码',
-                        },
+                        { validator: validatePassword, trigger: 'blur' },
                     ],
                     email: [
                         {
@@ -80,23 +96,42 @@
             const showEdit = (row) => {
                 if (!row) {
                     state.title = '添加'
+                    state.form = {
+                        id: undefined,
+                        username: '',
+                        password: '',
+                        email: '',
+                        roles: [],
+                    }
                 } else {
                     state.title = '编辑'
-                    state.form = JSON.parse(JSON.stringify(row))
+                    state.form = {
+                        id: row.id,
+                        username: row.username,
+                        password: '',
+                        email: row.email || '',
+                        roles: [...(row.roles || [])],
+                    }
                 }
                 state.dialogFormVisible = true
             }
             const close = () => {
                 state['formRef'].resetFields()
                 state.form = {
+                    id: undefined,
+                    username: '',
+                    password: '',
+                    email: '',
                     roles: [],
                 }
                 state.dialogFormVisible = false
             }
-            const save = () => {
-                state['formRef'].validate(async (valid) => {
-                    if (valid) {
-                        const { msg } = await doEdit(state.form)
+           const save = () => {
+               state['formRef'].validate(async (valid) => {
+                   if (valid) {
+                        const payload = { ...state.form }
+                        if (!payload.password) delete payload.password
+                        const { msg } = await doEdit(payload)
                         $baseMessage(msg, 'success', 'vab-hey-message-success')
                         emit('fetch-data')
                         close()

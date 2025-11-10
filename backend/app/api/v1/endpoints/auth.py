@@ -13,12 +13,14 @@ from app.models import User
 from app.repositories import token as token_repo
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenData, UserInfoData
 from app.services import auth as auth_service
+from app.services import profile as profile_service
 from app.utils.response import error_response, success_response
 
 router = APIRouter()
 DEFAULT_AVATAR = (
     "https://i.gtimg.cn/club/item/face/img/2/15922_100.gif"
 )  # 与前端默认头像保持一致
+INVITE_CODE = "letter-learning"
 
 
 @router.post("/login")
@@ -45,12 +47,19 @@ async def login(
     ip_address = request.client.host if request.client else None
 
     try:
-        token, _ = await auth_service.issue_token_pair(
+        token, refresh_token_record = await auth_service.issue_token_pair(
             session,
             user=user,
             roles=roles,
             user_agent=user_agent,
             ip_address=ip_address,
+        )
+        await profile_service.record_login(
+            session,
+            user_id=user.id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            token_id=refresh_token_record.token,
         )
         await session.commit()
     except Exception:
@@ -66,12 +75,17 @@ async def register(
     request: Request,
     session: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
+    if payload.password != payload.password_confirm:
+        return error_response("两次输入的密码不一致", code=400)
+    if payload.invite_code.strip() != INVITE_CODE:
+        return error_response("邀请码不正确", code=400)
+    if not payload.email:
+        return error_response("邮箱不能为空", code=400)
     try:
         user = await auth_service.register_user(
             session,
             username=payload.username,
             password=payload.password,
-            phone=payload.phone,
             email=payload.email,
             assign_roles=["student"],
         )
@@ -124,6 +138,7 @@ async def logout(
     if token_id:
         try:
             await auth_service.revoke_token(session, token_id)
+            await profile_service.record_logout(session, token_id)
             await session.commit()
         except Exception:
             await session.rollback()

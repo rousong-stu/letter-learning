@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
@@ -32,6 +34,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    media_path = Path(settings.media_path)
+    media_path.mkdir(parents=True, exist_ok=True)
+    app.mount(settings.media_url, StaticFiles(directory=media_path), name="media")
+
     app.include_router(api_v1_router)
 
     @app.get("/", tags=["系统"], summary="根路径探活")
@@ -42,4 +48,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

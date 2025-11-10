@@ -6,7 +6,6 @@ from typing import List, Optional
 
 from sqlalchemy import (
     JSON,
-    BigInteger,
     DateTime,
     Enum as SqlEnum,
     ForeignKey,
@@ -18,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func, text
 
 from app.models.base import Base
+from app.models.types import bigint
 
 
 class Role(Base):
@@ -26,7 +26,7 @@ class Role(Base):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True, comment="主键"
+        bigint(), primary_key=True, autoincrement=True, comment="主键"
     )
     slug: Mapped[str] = mapped_column(
         String(64), unique=True, nullable=False, comment="角色唯一编码"
@@ -78,16 +78,16 @@ class UserRole(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True, comment="主键"
+        bigint(), primary_key=True, autoincrement=True, comment="主键"
     )
     user_id: Mapped[int] = mapped_column(
-        BigInteger,
+        bigint(),
         ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
         comment="用户主键",
     )
     role_id: Mapped[int] = mapped_column(
-        BigInteger,
+        bigint(),
         ForeignKey("roles.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
         comment="角色主键",
@@ -106,10 +106,10 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True, comment="主键"
+        bigint(), primary_key=True, autoincrement=True, comment="主键"
     )
     user_id: Mapped[int] = mapped_column(
-        BigInteger,
+        bigint(),
         ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
         comment="用户主键",
@@ -165,10 +165,10 @@ class VerificationCode(Base):
     __tablename__ = "verification_codes"
 
     id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True, comment="主键"
+        bigint(), primary_key=True, autoincrement=True, comment="主键"
     )
     user_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger,
+        bigint(),
         ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
         nullable=True,
         comment="用户主键，注册前可为空",
@@ -223,10 +223,10 @@ class PasswordResetRequest(Base):
     __tablename__ = "password_reset_requests"
 
     id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True, comment="主键"
+        bigint(), primary_key=True, autoincrement=True, comment="主键"
     )
     user_id: Mapped[int] = mapped_column(
-        BigInteger,
+        bigint(),
         ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
         comment="用户主键",
@@ -258,10 +258,10 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True, comment="主键"
+        bigint(), primary_key=True, autoincrement=True, comment="主键"
     )
     user_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger,
+        bigint(),
         ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
         nullable=True,
         comment="关联用户主键",

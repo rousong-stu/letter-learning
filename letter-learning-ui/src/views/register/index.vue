@@ -26,38 +26,6 @@
                             </template>
                         </el-input>
                     </el-form-item>
-                    <el-form-item prop="phone">
-                        <el-input
-                            v-model.trim="form.phone"
-                            maxlength="11"
-                            :placeholder="translateTitle('请输入手机号')"
-                            show-word-limit
-                            type="text"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="smartphone-line" />
-                            </template>
-                        </el-input>
-                    </el-form-item>
-                    <el-form-item prop="phoneCode" style="position: relative">
-                        <el-input
-                            v-model.trim="form.phoneCode"
-                            :placeholder="translateTitle('请输入手机验证码')"
-                            type="text"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="barcode-box-line" />
-                            </template>
-                        </el-input>
-                        <el-button
-                            class="phone-code"
-                            :disabled="isGetPhone"
-                            type="primary"
-                            @click="getPhoneCode"
-                        >
-                            {{ phoneCode }}
-                        </el-button>
-                    </el-form-item>
                     <el-form-item prop="password">
                         <el-input
                             v-model.trim="form.password"
@@ -67,6 +35,40 @@
                         >
                             <template #prefix>
                                 <vab-icon icon="lock-line" />
+                            </template>
+                        </el-input>
+                    </el-form-item>
+            <el-form-item prop="passwordConfirm">
+                <el-input
+                    v-model.trim="form.passwordConfirm"
+                    autocomplete="new-password"
+                    :placeholder="translateTitle('请再次输入密码')"
+                    type="password"
+                >
+                    <template #prefix>
+                        <vab-icon icon="lock-line" />
+                    </template>
+                </el-input>
+            </el-form-item>
+            <el-form-item prop="email">
+                <el-input
+                    v-model.trim="form.email"
+                    :placeholder="translateTitle('请输入邮箱')"
+                    type="email"
+                >
+                    <template #prefix>
+                        <vab-icon icon="mail-line" />
+                    </template>
+                </el-input>
+            </el-form-item>
+            <el-form-item prop="inviteCode">
+                <el-input
+                    v-model.trim="form.inviteCode"
+                    :placeholder="translateTitle('请输入邀请码')"
+                    type="text"
+                        >
+                            <template #prefix>
+                                <vab-icon icon="ticket-line" />
                             </template>
                         </el-input>
                     </el-form-item>
@@ -95,7 +97,7 @@
 
 <script>
     import { translate } from '@/i18n'
-    import { isPassword, isPhone } from '@/utils/validate'
+    import { isPassword } from '@/utils/validate'
     import { register } from '@/api/user'
     import { useUserStore } from '@/store/modules/user'
 
@@ -130,9 +132,17 @@
                     callback()
                 }
             }
-            const validatePhone = (rule, value, callback) => {
-                if (!isPhone(value)) {
-                    callback(new Error(translate('请输入正确的手机号')))
+            const validatePasswordConfirm = (rule, value, callback) => {
+                if (value !== state.form.password) {
+                    callback(new Error(translate('两次输入的密码不一致')))
+                } else {
+                    callback()
+                }
+            }
+
+            const validateEmail = (rule, value, callback) => {
+                if (!value) {
+                    callback(new Error(translate('请输入邮箱')))
                 } else {
                     callback()
                 }
@@ -140,11 +150,13 @@
 
             const state = reactive({
                 registerFormRef: null,
-                isGetPhone: false,
-                timer: null,
-                phoneCode: translate('获取验证码'),
-                showRegister: false,
-                form: {},
+                form: {
+                    username: '',
+                    password: '',
+                    passwordConfirm: '',
+                    inviteCode: 'letter-learning',
+                    email: '',
+                },
                 registerRules: {
                     username: [
                         {
@@ -154,14 +166,6 @@
                         },
                         { validator: validateUsername, trigger: 'blur' },
                     ],
-                    phone: [
-                        {
-                            required: true,
-                            trigger: 'blur',
-                            message: translate('请输入手机号'),
-                        },
-                        { validator: validatePhone, trigger: 'blur' },
-                    ],
                     password: [
                         {
                             required: true,
@@ -170,37 +174,33 @@
                         },
                         { validator: validatePassword, trigger: 'blur' },
                     ],
-                    phoneCode: [
+                    passwordConfirm: [
                         {
                             required: true,
                             trigger: 'blur',
-                            message: translate('请输入手机验证码'),
+                            message: translate('请再次输入密码'),
+                        },
+                        { validator: validatePasswordConfirm, trigger: 'blur' },
+                    ],
+                    email: [
+                        {
+                            required: true,
+                            trigger: 'blur',
+                            message: translate('请输入邮箱'),
+                        },
+                        { validator: validateEmail, trigger: 'blur' },
+                    ],
+                    inviteCode: [
+                        {
+                            required: true,
+                            trigger: 'blur',
+                            message: translate('请输入邀请码'),
                         },
                     ],
                 },
                 loading: false,
-                passwordType: 'password',
             })
 
-            const getPhoneCode = () => {
-                if (!isPhone(state.form.phone)) {
-                    state['registerFormRef'].validateField('phone')
-                    return
-                }
-                state.isGetPhone = true
-                let n = 60
-                state.timer = setInterval(() => {
-                    if (n > 0) {
-                        n--
-                        state.phoneCode = `${translate('获取验证码 ') + n}s`
-                    } else {
-                        clearInterval(state.timer)
-                        state.phoneCode = translate('获取验证码')
-                        state.timer = null
-                        state.isGetPhone = false
-                    }
-                }, 1000)
-            }
             const handleRegister = () => {
                 state['registerFormRef'].validate(async (valid) => {
                     if (valid) {
@@ -221,15 +221,9 @@
                 })
             }
 
-            onBeforeRouteLeave((to, from, next) => {
-                clearInterval(state.timer)
-                next()
-            })
-
             return {
                 translateTitle: translate,
                 ...toRefs(state),
-                getPhoneCode,
                 handleRegister,
             }
         },
@@ -281,18 +275,6 @@
                 }
             }
 
-            .phone-code {
-                position: absolute;
-                top: 8px;
-                right: 10px;
-                width: 120px;
-                height: 32px;
-                font-size: 14px;
-                color: #fff;
-                cursor: pointer;
-                user-select: none;
-                border-radius: 3px;
-            }
         }
 
         .tips {
