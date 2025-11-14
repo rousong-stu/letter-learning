@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     auth,
+    dictionary,
     health,
     notice,
     profile,
@@ -16,3 +17,4 @@ router.include_router(user_management.router, tags=["用户管理"])
 router.include_router(notice.router, tags=["公告"])
 router.include_router(profile.router, tags=["个人中心"])
 router.include_router(word_story.router, tags=["AI 词汇短文"])
+router.include_router(dictionary.router, tags=["词典"])

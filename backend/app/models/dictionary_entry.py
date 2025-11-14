@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import JSON, DateTime, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 from app.models.types import bigint
@@ -83,6 +83,13 @@ class DictionaryEntry(Base):
         server_default=func.now(),
         onupdate=func.now(),
         comment="更新时间",
+    )
+
+    translations: Mapped[list["DictionaryDefinitionTranslation"]] = relationship(
+        "DictionaryDefinitionTranslation",
+        back_populates="entry",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:

@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     coze_poll_timeout_seconds: int = 90
     coze_request_timeout_seconds: int = 60
 
+    merriam_dictionary_api_key: str | None = "015c5134-71dc-4766-9b63-69aa5c2bec51"
+    merriam_thesaurus_api_key: str | None = "fbd67380-1208-4f60-93a5-ac4758820145"
+    dictionary_api_timeout_seconds: float = 15.0
+    dictionary_translation_bot_id: str | None = "7572629275527348260"
+    dictionary_translation_space_id: str | None = "7558388129191739455"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @computed_field

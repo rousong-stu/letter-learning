@@ -1,6 +1,7 @@
 from app.models.auth import RefreshToken
 from app.models.base import Base
 from app.models.dictionary_entry import DictionaryEntry
+from app.models.dictionary_translation import DictionaryDefinitionTranslation
 from app.models.user import (
     User,
     UserProfile,
@@ -18,4 +19,5 @@ __all__ = [
     "WordStory",
     "RefreshToken",
     "DictionaryEntry",
+    "DictionaryDefinitionTranslation",
 ]

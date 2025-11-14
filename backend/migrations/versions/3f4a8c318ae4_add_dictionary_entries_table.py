@@ -21,7 +21,7 @@ def bigint():
 
 # revision identifiers, used by Alembic.
 revision = "3f4a8c318ae4"
-down_revision = "1f5a408f0615"
+down_revision = "44f7b3616b8d"
 branch_labels = None
 depends_on = None
 
