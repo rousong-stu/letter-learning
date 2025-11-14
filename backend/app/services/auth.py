@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Iterable, Optional
+from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import create_access_token, get_password_hash, verify_password
-from app.models import RefreshToken, Role, User
+from app.models import RefreshToken, User
 from app.repositories import token as token_repo
 from app.repositories import user as user_repo
 
@@ -33,7 +33,6 @@ async def register_user(
     username: str,
     password: str,
     email: str | None = None,
-    assign_roles: Iterable[str] | None = None,
 ) -> User:
     if await user_repo.get_user_by_username(session, username):
         raise ValueError("用户名已存在")
@@ -57,8 +56,6 @@ async def register_user(
         changed_by=user.id,
     )
 
-    if assign_roles:
-        await user_repo.replace_user_roles(session, user, assign_roles)
     return user
 
 
@@ -66,13 +63,12 @@ async def issue_token_pair(
     session: AsyncSession,
     *,
     user: User,
-    roles: list[str] | None = None,
     user_agent: str | None = None,
     ip_address: str | None = None,
 ) -> tuple[str, RefreshToken]:
     additional_claims = {
         "username": user.username,
-        "roles": roles or [],
+        "roles": ["Admin"],
     }
     token, token_id, expire_at = create_access_token(
         user.id, additional_claims=additional_claims
@@ -94,16 +90,3 @@ async def issue_token_pair(
 
 async def revoke_token(session: AsyncSession, token_id: str) -> None:
     await token_repo.revoke_refresh_token(session, token_id)
-
-
-def format_role_names(roles: Iterable[Role]) -> list[str]:
-    """将角色 slug 转换为前端 guard 名称。"""
-    mapping = {
-        "admin": "Admin",
-        "teacher": "Teacher",
-        "student": "Student",
-    }
-    result = []
-    for role in roles:
-        result.append(mapping.get(role.slug, role.slug.title()))
-    return result

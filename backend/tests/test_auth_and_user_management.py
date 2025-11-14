@@ -40,7 +40,6 @@ async def test_register_login_flow(client):
     info_data = user_info.json()
     assert info_data["code"] == 200
     assert info_data["data"]["username"] == "student001"
-    assert "Student" in info_data["data"]["roles"]
 
     # 登录新账户
     login_resp = await client.post(
@@ -87,7 +86,6 @@ async def test_user_management_crud(client):
         "username": "teacher001",
         "password": "TeacherPass1",
         "email": "teacher001@example.com",
-        "roles": ["teacher"],
     }
     create_resp = await client.post(USER_EDIT_URL, json=create_payload, headers=headers)
     create_data = create_resp.json()
@@ -104,13 +102,12 @@ async def test_user_management_crud(client):
     users = list_data["data"]["list"]
     target = next((item for item in users if item["id"] == user_id), None)
     assert target is not None
-    assert "teacher" in target["roles"]
+    assert target is not None
 
     update_payload = {
         "id": user_id,
         "username": "teacher001",
         "email": "teacher001@example.com",
-        "roles": ["teacher", "student"],
     }
     update_resp = await client.post(USER_EDIT_URL, json=update_payload, headers=headers)
     update_data = update_resp.json()
@@ -127,7 +124,7 @@ async def test_user_management_crud(client):
         None,
     )
     assert updated_entry is not None
-    assert set(updated_entry["roles"]) == {"teacher", "student"}
+    assert updated_entry is not None
 
     delete_resp = await client.post(
         USER_DELETE_URL,

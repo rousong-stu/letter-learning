@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.main import app, get_settings
 from app.core.database import get_db
-from app.models import Base, Role, User, UserRole
+from app.models import Base, User
 from app.core.security import get_password_hash
 
 
@@ -45,14 +45,6 @@ async def session_factory(test_engine):
 
 
 async def _seed_data(session: AsyncSession):
-    roles = [
-        Role(slug="admin", name="管理员", description="平台超级管理员", is_system=1),
-        Role(slug="teacher", name="教师", description="教师权限", is_system=1),
-        Role(slug="student", name="学生", description="学生权限", is_system=1),
-    ]
-    session.add_all(roles)
-    await session.flush()
-
     admin_user = User(
         username="admin",
         email="admin@example.com",
@@ -61,10 +53,6 @@ async def _seed_data(session: AsyncSession):
         status=1,
     )
     session.add(admin_user)
-    await session.flush()
-
-    admin_role = next(role for role in roles if role.slug == "admin")
-    session.add(UserRole(user_id=admin_user.id, role_id=admin_role.id))
     await session.commit()
 
 

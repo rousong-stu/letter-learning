@@ -9,11 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
-    Role,
     User,
     UserLoginLog,
     UserProfile,
-    UserRole,
     UserPasswordHistory,
 )
 
@@ -61,19 +59,6 @@ async def create_user(
     return user
 
 
-async def assign_roles(session: AsyncSession, user: User, role_slugs: Iterable[str]) -> None:
-    if not role_slugs:
-        return
-    stmt = select(Role).where(Role.slug.in_(list(role_slugs)))
-    result = await session.execute(stmt)
-    roles = result.scalars().all()
-    if not roles:
-        raise ValueError("角色不存在")
-    for role in roles:
-        session.add(UserRole(user_id=user.id, role_id=role.id))
-    await session.flush()
-
-
 async def list_users(
     session: AsyncSession,
     *,
@@ -83,7 +68,6 @@ async def list_users(
 ) -> Sequence[User]:
     stmt = (
         select(User)
-        .options(selectinload(User.roles))
         .order_by(User.id.desc())
         .offset(offset)
         .limit(limit)
@@ -120,31 +104,6 @@ async def update_user(
     return user
 
 
-async def replace_user_roles(
-    session: AsyncSession, user: User, role_slugs: Iterable[str]
-) -> None:
-    unique_slugs = list(dict.fromkeys(role_slugs))
-    if not unique_slugs:
-        await session.execute(
-            delete(UserRole).where(UserRole.user_id == user.id)
-        )
-        await session.flush()
-        await session.refresh(user, attribute_names=["roles"])
-        return
-
-    stmt = select(Role).where(Role.slug.in_(unique_slugs))
-    roles = (await session.execute(stmt)).scalars().all()
-    if len(roles) != len(unique_slugs):
-        raise ValueError("角色不存在")
-
-    await session.execute(
-        delete(UserRole).where(UserRole.user_id == user.id)
-    )
-    session.add_all(UserRole(user_id=user.id, role_id=role.id) for role in roles)
-    await session.flush()
-    await session.refresh(user, attribute_names=["roles"])
-
-
 async def delete_users(session: AsyncSession, user_ids: Iterable[int]) -> int:
     stmt = delete(User).where(User.id.in_(list(user_ids)))
     result = await session.execute(stmt)
@@ -155,7 +114,7 @@ async def delete_users(session: AsyncSession, user_ids: Iterable[int]) -> int:
 async def get_user_by_id(session: AsyncSession, user_id: int) -> Optional[User]:
     stmt = (
         select(User)
-        .options(selectinload(User.profile), selectinload(User.roles))
+        .options(selectinload(User.profile))
         .where(User.id == user_id)
     )
     result = await session.execute(stmt)

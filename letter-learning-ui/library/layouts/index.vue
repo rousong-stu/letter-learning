@@ -8,9 +8,8 @@
             :show-tabs="theme.showTabs"
         />
         <el-backtop target="#app" />
-        <!--  主题组件放到layouts下防止主题切换，导致主题组件重新加载 -->
+        <!-- 主题组件放到 layouts 下防止主题切换导致主题组件重新加载 -->
         <vab-theme-drawer />
-        <vab-theme-setting />
     </div>
 </template>
 

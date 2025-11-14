@@ -62,6 +62,7 @@ export const asyncRoutes: VabRouteRecord[] = [
         path: '/',
         name: 'Root',
         component: Layout,
+        redirect: '/word-story/index',
         meta: {
             title: '首页',
             icon: 'home-2-line',
@@ -239,25 +240,10 @@ export const asyncRoutes: VabRouteRecord[] = [
                 ],
             },
             {
-                path: 'permission',
-                name: 'Permission',
-                component: () => import('@/views/vab/permission/index.vue'),
-                meta: {
-                    title: '角色权限',
-                    icon: 'user-3-line',
-                    badge: 'Pro',
-                },
-            },
-            {
                 path: 'table',
                 name: 'Table',
                 meta: {
                     title: '表格',
-                    // 非editor角色的用户可见
-                    guard: {
-                        role: ['Editor'],
-                        mode: 'except',
-                    },
                     icon: 'table-2',
                 },
                 children: [
@@ -952,16 +938,6 @@ export const asyncRoutes: VabRouteRecord[] = [
                 meta: {
                     title: '用户管理',
                     icon: 'user-3-line',
-                },
-            },
-            {
-                path: 'roleManagement',
-                name: 'RoleManagement',
-                component: () =>
-                    import('@/views/setting/roleManagement/index.vue'),
-                meta: {
-                    title: '角色管理',
-                    icon: 'admin-line',
                 },
             },
             {

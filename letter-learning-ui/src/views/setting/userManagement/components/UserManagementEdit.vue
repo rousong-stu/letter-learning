@@ -24,13 +24,6 @@
                     placeholder="请输入邮箱"
                 />
             </el-form-item>
-            <el-form-item label="角色" prop="roles">
-                <el-checkbox-group v-model="form.roles">
-                    <el-checkbox label="admin" value="admin">管理员</el-checkbox>
-                    <el-checkbox label="teacher" value="teacher">教师</el-checkbox>
-                    <el-checkbox label="student" value="student">学生</el-checkbox>
-                </el-checkbox-group>
-            </el-form-item>
         </el-form>
         <template #footer>
             <el-button @click="close">取 消</el-button>
@@ -58,7 +51,6 @@
                 formRef: null,
                 form: {
                     id: undefined,
-                    roles: [],
                     username: '',
                     password: '',
                     email: '',
@@ -81,13 +73,6 @@
                             message: '请输入邮箱',
                         },
                     ],
-                    roles: [
-                        {
-                            required: true,
-                            trigger: 'blur',
-                            message: '请选择角色',
-                        },
-                    ],
                 },
                 title: '',
                 dialogFormVisible: false,
@@ -101,7 +86,6 @@
                         username: '',
                         password: '',
                         email: '',
-                        roles: [],
                     }
                 } else {
                     state.title = '编辑'
@@ -110,7 +94,6 @@
                         username: row.username,
                         password: '',
                         email: row.email || '',
-                        roles: [...(row.roles || [])],
                     }
                 }
                 state.dialogFormVisible = true
@@ -122,13 +105,12 @@
                     username: '',
                     password: '',
                     email: '',
-                    roles: [],
                 }
                 state.dialogFormVisible = false
             }
-           const save = () => {
-               state['formRef'].validate(async (valid) => {
-                   if (valid) {
+            const save = () => {
+                state['formRef'].validate(async (valid) => {
+                    if (valid) {
                         const payload = { ...state.form }
                         if (!payload.password) delete payload.password
                         const { msg } = await doEdit(payload)

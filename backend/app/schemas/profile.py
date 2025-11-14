@@ -57,7 +57,6 @@ class ProfileResponse(BaseModel):
     user: ProfileUser
     profile: ProfileDetail
     loginLogs: List[LoginLogItem]
-    roles: List[str]
 
 
 class ProfileUpdateRequest(BaseModel):

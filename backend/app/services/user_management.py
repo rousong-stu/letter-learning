@@ -27,13 +27,12 @@ async def paginate_users(
     return list(users), total
 
 
-async def create_user_with_roles(
+async def create_user(
     session: AsyncSession,
     *,
     username: str,
     password: str,
     email: str | None,
-    roles: Iterable[str],
 ) -> User:
     if await user_repo.get_user_by_username(session, username):
         raise ValueError("用户名已存在")
@@ -45,18 +44,16 @@ async def create_user_with_roles(
         password_hash=password_hash,
         email=email,
     )
-    await user_repo.replace_user_roles(session, user, roles)
     return user
 
 
-async def update_user_with_roles(
+async def update_user(
     session: AsyncSession,
     *,
     user_id: int,
     username: str,
     email: str | None,
     password: str | None,
-    roles: Iterable[str],
 ) -> User:
     user = await session.get(User, user_id)
     if not user:
@@ -75,7 +72,6 @@ async def update_user_with_roles(
         email=email,
         password_hash=password_hash,
     )
-    await user_repo.replace_user_roles(session, user, roles)
     return user
 
 

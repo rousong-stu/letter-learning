@@ -45,7 +45,6 @@ async def get_user_list(
                 id=user.id,
                 username=user.username,
                 email=user.email,
-                roles=[role.slug for role in user.roles],
                 datatime=_format_datetime(user.updated_at or user.created_at),
             )
         )
@@ -60,23 +59,21 @@ async def edit_user(
 ):
     try:
         if payload.id:
-            user = await user_service.update_user_with_roles(
+            user = await user_service.update_user(
                 session,
                 user_id=payload.id,
                 username=payload.username,
                 email=payload.email,
                 password=payload.password,
-                roles=payload.roles,
             )
         else:
             if not payload.password:
                 return error_response("新增用户时需要填写密码", code=400)
-            user = await user_service.create_user_with_roles(
+            user = await user_service.create_user(
                 session,
                 username=payload.username,
                 password=payload.password,
                 email=payload.email,
-                roles=payload.roles,
             )
         await session.commit()
     except ValueError as exc:

@@ -5,16 +5,8 @@ const tokens = {
     editor: `editor-token-${Random.guid()}-${Date.now()}`,
     test: `test-token-${Random.guid()}-${Date.now()}`,
 }
-const username2role = {
-    admin: ['Admin'],
-    editor: ['Editor'],
-    test: ['Admin', 'Editor'],
-}
-const role2permission = {
-    Admin: ['read:system', 'write:system', 'delete:system'],
-    Editor: ['read:system', 'write:system'],
-    Test: ['read:system'],
-}
+const adminRoles = ['Admin']
+const adminPermissions = ['read:system', 'write:system', 'delete:system']
 
 module.exports = [
     {
@@ -75,7 +67,7 @@ module.exports = [
             return {
                 code: 200,
                 msg: '模拟注册成功',
-                data: { token: tokens['editor'] },
+                data: { token: tokens['admin'] },
             }
         },
     },
@@ -95,18 +87,13 @@ module.exports = [
             const username = isTrue
                 ? _authorization.split('-token-')[0]
                 : 'admin'
-            const roles = username2role[username] || []
-            const permissions = [
-                ...new Set(roles.flatMap((role) => role2permission[role])),
-            ]
-
             return {
                 code: 200,
                 msg: 'success',
                 data: {
                     username,
-                    roles,
-                    permissions,
+                    roles: adminRoles,
+                    permissions: adminPermissions,
                     avatar: 'https://i.gtimg.cn/club/item/face/img/2/16022_100.gif',
                 },
             }

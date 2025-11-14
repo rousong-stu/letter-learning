@@ -41,8 +41,6 @@ async def login(
     if not user:
         return error_response("用户名或密码错误", code=401)
 
-    await session.refresh(user, attribute_names=["roles"])
-    roles = auth_service.format_role_names(user.roles)
     user_agent = request.headers.get("user-agent")
     ip_address = request.client.host if request.client else None
 
@@ -50,7 +48,6 @@ async def login(
         token, refresh_token_record = await auth_service.issue_token_pair(
             session,
             user=user,
-            roles=roles,
             user_agent=user_agent,
             ip_address=ip_address,
         )
@@ -87,16 +84,12 @@ async def register(
             username=payload.username,
             password=payload.password,
             email=payload.email,
-            assign_roles=["student"],
         )
-        await session.refresh(user, attribute_names=["roles"])
-        roles = auth_service.format_role_names(user.roles)
         user_agent = request.headers.get("user-agent")
         ip_address = request.client.host if request.client else None
         token, _ = await auth_service.issue_token_pair(
             session,
             user=user,
-            roles=roles,
             user_agent=user_agent,
             ip_address=ip_address,
         )
@@ -113,12 +106,9 @@ async def register(
 
 @router.get("/userInfo")
 async def user_info(current_user: User = Depends(get_current_user)) -> JSONResponse:
-    roles = auth_service.format_role_names(current_user.roles)
     data = UserInfoData(
         username=current_user.display_name or current_user.username,
         avatar=current_user.avatar_url or DEFAULT_AVATAR,
-        roles=roles,
-        permissions=[],
     )
     return success_response(data.model_dump(), msg="获取成功")
 
@@ -172,14 +162,11 @@ async def refresh_token(
     if not user or user.status != 1:
         return error_response("用户不存在或已禁用", code=403)
 
-    await session.refresh(user, attribute_names=["roles"])
-    roles = auth_service.format_role_names(user.roles)
     try:
         await auth_service.revoke_token(session, token_id)
         token_value, _ = await auth_service.issue_token_pair(
             session,
             user=user,
-            roles=roles,
             user_agent=None,
             ip_address=None,
         )

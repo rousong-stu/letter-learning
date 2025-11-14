@@ -1,11 +1,4 @@
-from app.models.auth import (
-    AuditLog,
-    PasswordResetRequest,
-    RefreshToken,
-    Role,
-    UserRole,
-    VerificationCode,
-)
+from app.models.auth import RefreshToken
 from app.models.base import Base
 from app.models.user import (
     User,
@@ -22,10 +15,5 @@ __all__ = [
     "UserPasswordHistory",
     "UserLoginLog",
     "WordStory",
-    "Role",
-    "UserRole",
     "RefreshToken",
-    "VerificationCode",
-    "PasswordResetRequest",
-    "AuditLog",
 ]

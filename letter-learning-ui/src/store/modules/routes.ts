@@ -9,6 +9,24 @@ import type { OptionType, RoutesModuleType } from '/#/store'
 import { isArray } from '@/utils/validate'
 import { getList } from '@/api/router'
 import type { VabRouteRecord } from '/#/router'
+import type { RouteRecordName } from 'vue-router'
+
+const MENU_ALLOW_LIST = new Set<RouteRecordName | string>(['WordStoryRoot'])
+
+function filterMenuByAllowList(
+    routes: VabRouteRecord[]
+): VabRouteRecord[] {
+    return routes
+        .map((route) => ({ ...route }))
+        .filter((route) => {
+            if (MENU_ALLOW_LIST.has(route.name as string)) return true
+            if (route.children && route.children.length > 0) {
+                route.children = filterMenuByAllowList(route.children)
+                return route.children.length > 0
+            }
+            return false
+        })
+}
 
 export const useRoutesStore = defineStore('routes', {
     state: (): RoutesModuleType => ({
@@ -85,8 +103,11 @@ export const useRoutesStore = defineStore('routes', {
                 [...constantRoutes, ...routes],
                 control
             )
-            // 设置菜单所需路由
-            this.routes = JSON.parse(JSON.stringify(accessRoutes))
+            // 设置菜单所需路由（仅保留指定菜单）
+            const clonedRoutes = JSON.parse(
+                JSON.stringify(accessRoutes)
+            ) as VabRouteRecord[]
+            this.routes = filterMenuByAllowList(clonedRoutes)
             // 根据可访问路由重置Vue Router
             await resetRouter(accessRoutes)
         },

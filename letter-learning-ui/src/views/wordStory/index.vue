@@ -12,7 +12,7 @@
                     class="story-card"
                     shadow="hover"
                     v-loading="pageLoading"
-                    element-loading-text="正在生成短文..."
+                    element-loading-text="正在加载短文..."
                 >
                     <template #header>
                         <div class="story-card__header">
@@ -599,15 +599,26 @@ const updateStoryState = (record?: WordStoryRecord) => {
     activeWordIndex.value = 0
 }
 
+const resetStoryState = () => {
+    storyText.value = ''
+    currentWords.value = DEFAULT_WORDS.map((item) => item.word)
+    activeWordIndex.value = 0
+}
+
 const loadTodayStory = async () => {
     try {
         const { data } = await fetchTodayWordStory({
-            auto_generate: true,
+            auto_generate: false,
         })
         updateStoryState(data)
-    } catch (error) {
-        console.error(error)
-        ElMessage.error('获取今日短文失败，请稍后重试')
+    } catch (error: any) {
+        if (error?.code === 404) {
+            resetStoryState()
+            ElMessage.info('今日尚未生成短文，请点击“重新生成”')
+        } else {
+            console.error(error)
+            ElMessage.error('获取今日短文失败，请稍后重试')
+        }
     } finally {
         pageLoading.value = false
     }

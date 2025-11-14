@@ -47,8 +47,8 @@ module.exports = {
     authentication: 'intelligence',
     // 是否支持游客模式，支持情况下，访问白名单，可查看所有asyncRoutes
     supportVisit: false,
-    // 是否开启roles字段进行角色权限控制(如果是all模式后端完全处理角色并进行json组装，可设置false不处理路由中的roles字段)
-    rolesControl: true,
+    // 是否开启roles字段进行角色权限控制(单角色管理员模式下直接关闭)
+    rolesControl: false,
     // vertical column comprehensive common布局时是否只保持一个子菜单的展开
     uniqueOpened: false,
     // vertical column comprehensive common布局时默认展开的菜单path，使用逗号隔开建议只展开一个，true全部展开，false/[]不展开

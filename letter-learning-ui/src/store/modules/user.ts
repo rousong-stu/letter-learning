@@ -10,7 +10,7 @@ import { gp } from '@gp'
 import { getUserInfo, login, logout, socialLogin } from '@/api/user'
 import { getToken, removeToken, setToken } from '@/utils/token'
 import { resetRouter } from '@/router'
-import { isArray, isString } from '@/utils/validate'
+import { isString } from '@/utils/validate'
 import { tokenName } from '@/config'
 
 export const useUserStore = defineStore('user', {
@@ -53,6 +53,8 @@ export const useUserStore = defineStore('user', {
         setVirtualRoles() {
             const aclStore = useAclStore()
             aclStore.setFull(true)
+            aclStore.setRole([])
+            aclStore.setPermission([])
             this.setUsername('admin(未开启登录拦截)')
             this.setAvatar(
                 'https://i.gtimg.cn/club/item/face/img/2/15922_100.gif'
@@ -114,20 +116,16 @@ export const useUserStore = defineStore('user', {
          */
         async getUserInfo() {
             const {
-                data: { username, avatar, roles, permissions },
+                data: { username, avatar },
             } = await getUserInfo()
             /**
-             * 检验返回数据是否正常，无对应参数，将使用默认用户名,头像,Roles和Permissions
+             * 检验返回数据是否正常，无对应参数，将使用默认用户名与头像
              * username {String}
              * avatar {String}
-             * roles {List}
-             * ability {List}
              */
             if (
                 (username && !isString(username)) ||
-                (avatar && !isString(avatar)) ||
-                (roles && !isArray(roles)) ||
-                (permissions && !isArray(permissions))
+                (avatar && !isString(avatar))
             ) {
                 const err =
                     'getUserInfo核心接口异常，请检查返回JSON格式是否正确'
@@ -139,10 +137,10 @@ export const useUserStore = defineStore('user', {
                 if (username) this.setUsername(username)
                 // 如不使用avatar头像,可删除以下代码
                 if (avatar) this.setAvatar(avatar)
-                // 如不使用roles权限控制,可删除以下代码
-                if (roles) aclStore.setRole(roles)
-                // 如不使用permissions权限控制,可删除以下代码
-                if (permissions) aclStore.setPermission(permissions)
+                // 单角色管理员模式下直接赋予全部权限
+                aclStore.setFull(true)
+                aclStore.setRole([])
+                aclStore.setPermission([])
             }
         },
         /**

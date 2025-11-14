@@ -75,10 +75,8 @@
             />
 
             <el-table-column align="center" label="角色" show-overflow-tooltip>
-                <template #default="{ row }">
-                    <el-tag v-for="(item, index) in row.roles" :key="index">
-                        {{ item }}
-                    </el-tag>
+                <template #default>
+                    <el-tag>管理员</el-tag>
                 </template>
             </el-table-column>
 

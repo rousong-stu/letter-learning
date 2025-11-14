@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -35,5 +35,3 @@ class TokenData(BaseModel):
 class UserInfoData(BaseModel):
     username: str
     avatar: str
-    roles: List[str]
-    permissions: List[str]

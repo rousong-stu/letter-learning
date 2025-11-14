@@ -11,17 +11,12 @@ module.exports = [
                     list: [
                         {
                             id: 'root',
-                            label: '全部角色',
+                            label: '管理员',
                             children: [
                                 {
                                     id: '@id',
                                     role: 'admin',
-                                    label: 'admin角色',
-                                },
-                                {
-                                    id: '@id',
-                                    role: 'editor',
-                                    label: 'editor角色',
+                                    label: '管理员',
                                 },
                             ],
                         },

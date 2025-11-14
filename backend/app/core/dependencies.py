@@ -63,5 +63,4 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户不存在或已禁用",
         )
-    await session.refresh(user, attribute_names=["roles"])
     return user

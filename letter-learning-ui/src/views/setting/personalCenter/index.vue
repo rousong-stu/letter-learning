@@ -17,22 +17,6 @@
                         <h2 class="profile-name">
                             {{ profile.user.displayName || profile.user.username }}
                         </h2>
-                        <el-space
-                            v-if="roleLabels.length"
-                            class="profile-roles"
-                            wrap
-                            size="small"
-                        >
-                            <el-tag
-                                v-for="role in roleLabels"
-                                :key="role"
-                                type="success"
-                                effect="plain"
-                                size="small"
-                            >
-                                {{ role }}
-                            </el-tag>
-                        </el-space>
                         <p class="profile-signature">
                             {{
                                 profile.user.signature ||
@@ -387,8 +371,6 @@
         },
     })
 
-    const roleLabels = ref<string[]>([])
-
     const loginLogs = ref<any[]>([])
     const loginLogsLoading = ref(false)
 
@@ -451,15 +433,9 @@
         ],
     }
 
-    const roleNameMap: Record<string, string> = {
-        admin: '管理员',
-        teacher: '教师',
-        student: '学生',
-    }
-
     const loadProfile = async () => {
         const {
-            data: { user, profile: profileDetail, loginLogs: logs, roles },
+            data: { user, profile: profileDetail, loginLogs: logs },
         } = await fetchProfile()
         const detail = profileDetail || {}
         profile.user = user
@@ -473,9 +449,6 @@
             website: detail.website || '',
             bio: detail.bio || '',
         })
-        roleLabels.value = (roles || []).map(
-            (role: string) => roleNameMap[role] || role
-        )
         avatarPreview.value = user.avatarUrl || avatar.value
         Object.assign(form, {
             realName: detail.realName || '',
@@ -669,10 +642,6 @@
             margin-top: 16px;
             font-size: 20px;
             font-weight: 600;
-        }
-
-        .profile-roles {
-            margin: 8px 0 4px;
         }
 
         .profile-signature {

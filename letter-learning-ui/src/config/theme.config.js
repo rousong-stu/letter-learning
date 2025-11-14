@@ -3,7 +3,7 @@
  */
 module.exports = {
     // 布局种类：横向布局horizontal、纵向布局vertical、分栏布局column、综合布局comprehensive、常规布局common、浮动布局float
-    layout: 'column',
+    layout: 'common',
     // 主题名称：默认blue-black、blue-white、green-black、green-white、渐变ocean、red-white、red-black
     themeName: 'blue-black',
     // 菜单背景 none、vab-background

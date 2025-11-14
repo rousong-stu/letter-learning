@@ -12,7 +12,6 @@ from alembic import op
 from sqlalchemy.orm import Session
 
 from app.models import Base
-from app.models.auth import Role, UserRole
 from app.models.user import User
 
 
@@ -31,36 +30,6 @@ def upgrade() -> None:
 
     session = Session(bind=bind)
     try:
-        role_defs = [
-            {
-                "slug": "admin",
-                "name": "管理员",
-                "description": "平台超级管理员",
-                "is_system": 1,
-            },
-            {
-                "slug": "teacher",
-                "name": "教师",
-                "description": "教师权限",
-                "is_system": 1,
-            },
-            {
-                "slug": "student",
-                "name": "学生",
-                "description": "学生权限",
-                "is_system": 1,
-            },
-        ]
-
-        role_map: dict[str, Role] = {}
-        for data in role_defs:
-            role = session.query(Role).filter_by(slug=data["slug"]).one_or_none()
-            if role is None:
-                role = Role(**data)
-                session.add(role)
-                session.flush()
-            role_map[data["slug"]] = role
-
         admin = session.query(User).filter_by(username="admin").one_or_none()
         if admin is None:
             admin = User(
@@ -78,16 +47,6 @@ def upgrade() -> None:
             if not admin.display_name:
                 admin.display_name = "系统管理员"
             session.flush()
-
-        admin_role = role_map.get("admin")
-        if admin_role:
-            has_relation = (
-                session.query(UserRole)
-                .filter_by(user_id=admin.id, role_id=admin_role.id)
-                .first()
-            )
-            if not has_relation:
-                session.add(UserRole(user_id=admin.id, role_id=admin_role.id))
 
         session.commit()
     except Exception:

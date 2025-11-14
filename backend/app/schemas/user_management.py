@@ -9,7 +9,6 @@ class UserListItem(BaseModel):
     id: int
     username: str
     email: Optional[str]
-    roles: List[str]
     datatime: str
 
 
@@ -23,7 +22,6 @@ class UserEditRequest(BaseModel):
     username: constr(strip_whitespace=True, min_length=1)
     password: Optional[constr(strip_whitespace=True, min_length=1)] = None
     email: Optional[str] = None
-    roles: List[str] = Field(default_factory=list)
 
 
 class UserDeleteRequest(BaseModel):

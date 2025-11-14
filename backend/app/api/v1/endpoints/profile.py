@@ -46,7 +46,6 @@ async def get_me(
         user=user_schema,
         profile=profile_schema,
         loginLogs=log_schemas,
-        roles=[role.slug for role in user.roles],
     )
     return success_response(data.model_dump(mode="json"), msg="获取成功")
 

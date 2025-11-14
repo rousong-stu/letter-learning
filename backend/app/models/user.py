@@ -81,32 +81,10 @@ class User(Base):
         comment="更新时间",
     )
 
-    roles: Mapped[List["Role"]] = relationship(
-        "Role",
-        secondary="user_roles",
-        back_populates="users",
-        lazy="selectin",
-    )
     refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
         "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin",
-    )
-    verification_codes: Mapped[List["VerificationCode"]] = relationship(
-        "VerificationCode",
-        back_populates="user",
-        lazy="selectin",
-    )
-    password_reset_requests: Mapped[List["PasswordResetRequest"]] = relationship(
-        "PasswordResetRequest",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin",
-    )
-    audit_logs: Mapped[List["AuditLog"]] = relationship(
-        "AuditLog",
-        back_populates="user",
         lazy="selectin",
     )
     profile: Mapped[Optional["UserProfile"]] = relationship(
