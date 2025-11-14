@@ -85,33 +85,33 @@ class User(Base):
         "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="noload",
     )
     profile: Mapped[Optional["UserProfile"]] = relationship(
         "UserProfile",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="noload",
     )
     password_histories: Mapped[List["UserPasswordHistory"]] = relationship(
         "UserPasswordHistory",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="noload",
         foreign_keys="UserPasswordHistory.user_id",
     )
     login_logs: Mapped[List["UserLoginLog"]] = relationship(
         "UserLoginLog",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="noload",
     )
     word_stories: Mapped[List["WordStory"]] = relationship(
         "WordStory",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="noload",
     )
 
     def __repr__(self) -> str:
