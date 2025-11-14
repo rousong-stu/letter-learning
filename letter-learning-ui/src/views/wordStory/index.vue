@@ -73,7 +73,7 @@
                 </el-card>
             </el-col>
 
-            <el-col
+                        <el-col
                 class="side-column"
                 :lg="8"
                 :md="8"
@@ -81,146 +81,266 @@
                 :xs="24"
             >
                 <div class="side-panels">
-                    <el-card class="conversation-card fill-card" shadow="hover">
-                        <template #header>
-                            <div class="card-header">
-                                <div>
-                                    <div class="title">AI 对话区</div>
-                                    <div class="subtitle">
-                                        结合短文内容随时追问、做语法复盘
+                    <el-card class="side-card fill-card" shadow="hover">
+                        <el-tabs v-model="activeSideTab" class="side-tabs">
+                            <template #tab="{ tab }">
+                                <span class="tab-label">
+                                    <vab-remix-icon
+                                        v-if="tab.props.name === 'conversation'"
+                                        icon="chat-1-line"
+                                    />
+                                    <vab-remix-icon v-else icon="book-read-line" />
+                                    {{ tab.props.label }}
+                                </span>
+                            </template>
+                            <el-tab-pane label="AI 对话" name="conversation">
+                                <div class="pane-header">
+                                    <div>
+                                        <div class="title">AI 对话区</div>
+                                        <div class="subtitle">
+                                            结合短文内容随时追问、做语法复盘
+                                        </div>
                                     </div>
+                                    <el-tag type="success" size="small">预览</el-tag>
                                 </div>
-                                <el-tag type="success" size="small">
-                                    预览
-                                </el-tag>
-                            </div>
-                        </template>
-                        <div class="conversation-body">
-                            <div class="chat-intro">
-                                <div class="chat-title">
-                                    多轮对话（演示）
-                                </div>
-                                <div class="chat-prompts">
-                                    <el-tag
-                                        v-for="prompt in quickPrompts"
-                                        :key="prompt"
-                                        size="small"
-                                        effect="plain"
-                                        @click="handleQuickPrompt(prompt)"
-                                    >
-                                        {{ prompt }}
-                                    </el-tag>
-                                </div>
-                            </div>
-                            <el-scrollbar
-                                ref="chatScrollbarRef"
-                                class="chat-scroll"
-                                always
-                            >
-                                <div
-                                    v-for="message in conversationMessages"
-                                    :key="message.id"
-                                    class="chat-bubble"
-                                    :class="message.sender"
-                                >
-                                    <div class="bubble-meta">
-                                        <span class="sender">
-                                            {{
-                                                message.sender === 'ai'
-                                                    ? '智能体'
-                                                    : '我'
-                                            }}
-                                        </span>
-                                        <span class="time">
-                                            {{ message.time }}
-                                        </span>
+                                <div class="conversation-body">
+                                    <div class="chat-intro">
+                                        <div class="chat-title">多轮对话（演示）</div>
+                                        <div class="chat-prompts">
+                                            <el-tag
+                                                v-for="prompt in quickPrompts"
+                                                :key="prompt"
+                                                size="small"
+                                                effect="plain"
+                                                @click="handleQuickPrompt(prompt)"
+                                            >
+                                                {{ prompt }}
+                                            </el-tag>
+                                        </div>
                                     </div>
-                                    <p class="bubble-text">
-                                        {{ message.text }}
-                                    </p>
-                                </div>
-                            </el-scrollbar>
-                            <div class="conversation-input">
-                                <el-input
-                                    v-model="conversationInput"
-                                    type="textarea"
-                                    placeholder="就短文抛出一个问题，或请 AI 帮你改写句子"
-                                    :rows="3"
-                                    resize="none"
-                                    class="chat-textarea"
-                                />
-                                <div class="input-actions">
-                                    <el-button text size="small" @click="handleClearInput">
-                                        清空
-                                    </el-button>
-                                    <el-button
-                                        type="primary"
-                                        :disabled="!conversationInput.trim()"
-                                        @click="handleConversationSend"
-                                    >
-                                        <vab-remix-icon icon="send-plane-2-line" />
-                                        发送
-                                    </el-button>
-                                </div>
-                            </div>
-                        </div>
-                    </el-card>
-
-                    <el-card class="word-card fill-card" shadow="hover">
-                        <template #header>
-                            <div class="card-header">
-                                <div>
-                                    <div class="title">单词卡片</div>
-                                    <div class="subtitle">
-                                        可视化记忆路径，稍后支持交互
-                                    </div>
-                                </div>
-                                <div class="card-actions">
-                                    <el-button
-                                        text
-                                        type="primary"
-                                        @click="prevWord"
-                                    >
-                                        <vab-remix-icon icon="arrow-left-s-line" />
-                                    </el-button>
-                                    <el-button
-                                        text
-                                        type="primary"
-                                        @click="nextWord"
-                                    >
-                                        <vab-remix-icon
-                                            icon="arrow-right-s-line"
+                                    <el-scrollbar ref="chatScrollbarRef" class="chat-scroll" always>
+                                        <div
+                                            v-for="message in conversationMessages"
+                                            :key="message.id"
+                                            class="chat-bubble"
+                                            :class="message.sender"
+                                        >
+                                            <div class="bubble-meta">
+                                                <span class="sender">
+                                                    {{ message.sender === 'ai' ? '智能体' : '我' }}
+                                                </span>
+                                                <span class="time">{{ message.time }}</span>
+                                            </div>
+                                            <p class="bubble-text">{{ message.text }}</p>
+                                        </div>
+                                    </el-scrollbar>
+                                    <div class="conversation-input">
+                                        <el-input
+                                            v-model="conversationInput"
+                                            type="textarea"
+                                            placeholder="就短文抛出一个问题，或请 AI 帮你改写句子"
+                                            :rows="3"
+                                            resize="none"
+                                            class="chat-textarea"
                                         />
-                                    </el-button>
+                                        <div class="input-actions">
+                                            <el-button text size="small" @click="handleClearInput">清空</el-button>
+                                            <el-button
+                                                type="primary"
+                                                :disabled="!conversationInput.trim()"
+                                                @click="handleConversationSend"
+                                            >
+                                                <vab-remix-icon icon="send-plane-2-line" />
+                                                发送
+                                            </el-button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </template>
-                        <div class="word-card__body">
-                            <div class="word-index">
-                                {{
-                                    `${activeWordIndex + 1}/${displayWords.length}`
-                                }}
-                            </div>
-                            <div class="word-main">
-                                <div class="word">
-                                    {{ activeWord.word }}
+                            </el-tab-pane>
+                            <el-tab-pane label="单词卡片" name="word">
+                                <div class="word-pane">
+                                    <div class="word-search">
+                                        <el-input
+                                            v-model="wordSearch"
+                                            placeholder="输入英文单词，例如 abandon"
+                                            size="large"
+                                            @keyup.enter="handleWordSearch"
+                                        >
+                                            <template #prepend>
+                                                <vab-remix-icon icon="search-eye-line" />
+                                            </template>
+                                        </el-input>
+                                        <el-button
+                                            type="primary"
+                                            size="large"
+                                            :loading="wordCardLoading"
+                                            @click="handleWordSearch"
+                                        >
+                                            查询
+                                        </el-button>
+                                    </div>
+                                    <div class="word-card__body">
+                                        <el-scrollbar class="word-scroll" always>
+                                            <div class="word-header">
+                                                <div>
+                                                    <div class="word-label">Merriam-Webster</div>
+                                                    <div class="word-title">
+                                                        <span>{{ wordCard.word }}</span>
+                                                        <el-tag type="info" round>
+                                                            {{ wordCard.part_of_speech }}
+                                                        </el-tag>
+                                                    </div>
+                                                    <div class="word-tags">
+                                                        <el-tag
+                                                            v-for="tag in wordCardLabels"
+                                                            :key="tag"
+                                                            size="small"
+                                                            type="success"
+                                                            effect="plain"
+                                                        >
+                                                            {{ tag }}
+                                                        </el-tag>
+                                                    </div>
+                                                </div>
+                                                <div class="word-actions">
+                                                    <el-button
+                                                        text
+                                                        type="primary"
+                                                        @click="playWordAudio(wordCard.phonetics?.[0]?.audio_url)"
+                                                    >
+                                                        <vab-remix-icon icon="volume-up-line" class="audio-icon" />
+                                                        发音
+                                                    </el-button>
+                                                    <span v-if="wordCard.first_use_date">
+                                                        首次出现：{{ wordCard.first_use_date }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="word-basic">
+                                                <div class="phonetics">
+                                                    <div class="phonetic-row">
+                                                        <div
+                                                            v-for="item in wordCard.phonetics"
+                                                            :key="item.notation"
+                                                            class="phonetic-item"
+                                                        >
+                                                            <span>{{ item.notation }}</span>
+                                                            <el-button
+                                                                v-if="item.audio_url"
+                                                                text
+                                                                circle
+                                                                size="small"
+                                                                class="phonetic-audio"
+                                                                @click="playWordAudio(item.audio_url)"
+                                                            >
+                                                                <vab-remix-icon icon="volume-up-line" />
+                                                            </el-button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="variants" v-if="wordCard.variants?.length">
+                                                    <span class="label">变体</span>
+                                                    <el-tag
+                                                        v-for="variant in wordCard.variants"
+                                                        :key="variant"
+                                                        effect="dark"
+                                                        size="small"
+                                                    >
+                                                        {{ variant }}
+                                                    </el-tag>
+                                                </div>
+                                                <div class="variants" v-if="wordCard.inflections?.length">
+                                                    <span class="label">词形</span>
+                                                    <el-tag
+                                                        v-for="inflection in wordCard.inflections"
+                                                        :key="inflection"
+                                                        effect="plain"
+                                                        size="small"
+                                                    >
+                                                        {{ inflection }}
+                                                    </el-tag>
+                                                </div>
+                                            </div>
+
+                                            <section class="info-block">
+                                                <h4>英文释义与例句</h4>
+                                                <el-timeline>
+                                                    <el-timeline-item
+                                                        v-for="(definition, index) in wordCard.definitions"
+                                                        :key="index"
+                                                        :timestamp="`释义 ${index + 1}`"
+                                                        color="#409eff"
+                                                    >
+                                                        <div class="definition-text">
+                                                            {{ definition.meaning }}
+                                                        </div>
+                                                        <ul
+                                                            v-if="definition.examples?.length"
+                                                            class="example-list"
+                                                        >
+                                                            <li
+                                                                v-for="(example, idx) in definition.examples"
+                                                                :key="idx"
+                                                            >
+                                                                {{ example }}
+                                                            </li>
+                                                        </ul>
+                                                    </el-timeline-item>
+                                                </el-timeline>
+                                            </section>
+
+                                            <section class="info-block two-column">
+                                                <div>
+                                                    <h4>同义词</h4>
+                                                    <div class="tag-list" v-if="wordCard.synonyms?.length">
+                                                        <el-tag
+                                                            v-for="item in wordCard.synonyms"
+                                                            :key="item"
+                                                            type="info"
+                                                        >
+                                                            {{ item }}
+                                                        </el-tag>
+                                                    </div>
+                                                    <p v-else class="empty-tip">等待接口返回</p>
+                                                </div>
+                                                <div>
+                                                    <h4>反义词</h4>
+                                                    <div class="tag-list" v-if="wordCard.antonyms?.length">
+                                                        <el-tag
+                                                            v-for="item in wordCard.antonyms"
+                                                            :key="item"
+                                                            type="danger"
+                                                            effect="plain"
+                                                        >
+                                                            {{ item }}
+                                                        </el-tag>
+                                                    </div>
+                                                    <p v-else class="empty-tip">暂无数据</p>
+                                                </div>
+                                            </section>
+
+                                            <section class="info-block">
+                                                <h4>词源与中文释义</h4>
+                                                <p class="etymology-text">
+                                                    {{ wordCard.etymology || '等待后端补充词源信息' }}
+                                                </p>
+                                                <el-alert
+                                                    type="info"
+                                                    :closable="false"
+                                                    title="中文释义将通过 AI 翻译生成"
+                                                />
+                                                <p class="translation-text">
+                                                    {{ wordCard.chinese_translation || '示例：放弃；抛弃' }}
+                                                </p>
+                                            </section>
+                                        </el-scrollbar>
+                                    </div>
                                 </div>
-                                <div class="phonetic">
-                                    {{ activeWord.phonetic }}
-                                </div>
-                                <div class="translation">
-                                    {{ activeWord.translation }}
-                                </div>
-                            </div>
-                            <div class="word-detail">
-                                <div class="label">记忆提示</div>
-                                <p>{{ activeWord.note }}</p>
-                            </div>
-                            <div class="usage-example">
-                                <div class="label">例句</div>
-                                <p>{{ activeWord.example }}</p>
-                            </div>
-                        </div>
+                            </el-tab-pane>
+
+
+                        </el-tabs>
                     </el-card>
                 </div>
             </el-col>
@@ -462,7 +582,51 @@ const storyText = ref('')
 const activeWordIndex = ref(0)
 const currentWords = ref<string[]>(DEFAULT_WORDS.map((item) => item.word))
 const conversationInput = ref('')
+const activeSideTab = ref('conversation')
 const chatScrollbarRef = ref<{ setScrollTop: (value: number) => void }>()
+
+const wordSearch = ref('abandon')
+const wordCardLoading = ref(false)
+const wordCard = reactive({
+    word: 'Abandon',
+    part_of_speech: 'verb',
+    phonetics: [
+        {
+            notation: '/əˈbændən/ (美)',
+            audio_url:
+                'https://media.merriam-webster.com/audio/prons/en/us/mp3/a/abando02.mp3',
+        },
+        {
+            notation: '/əˈbandən/ (英)',
+            audio_url:
+                'https://media.merriam-webster.com/audio/prons/en/uk/mp3/a/abandon01.mp3',
+        },
+    ],
+    variants: ['abandoned', 'abandoning'],
+    inflections: ['abandons', 'abandoned', 'abandoning'],
+    definitions: [
+        {
+            meaning:
+                'to give up to the control or influence of another person or agent',
+            examples: [
+                'The explorer refused to abandon her dream despite the harsh weather.',
+            ],
+        },
+        {
+            meaning: 'to withdraw from often in the face of danger or difficulty',
+            examples: ['Villagers were forced to abandon their homes during the flood.'],
+        },
+    ],
+    synonyms: ['cede', 'surrender', 'desert'],
+    antonyms: ['keep', 'maintain'],
+    etymology: 'Middle English abandounen, from Anglo-French abandoner',
+    first_use_date: '14th century',
+    labels: {
+        general: ['often passive'],
+        usage: ['formal'],
+    },
+    chinese_translation: '放弃；抛弃',
+})
 
 const aiReplyTemplates = [
     '收到，我可以从结构、语气或证据角度再补充分析。',
@@ -506,6 +670,12 @@ const activeWord = computed(() => {
     return current ?? displayWords.value[0] ?? fallbackWordInfo
 })
 
+const wordCardLabels = computed(() => {
+    const general = wordCard.labels?.general || []
+    const usage = wordCard.labels?.usage || []
+    return [...general, ...usage]
+})
+
 const displayDate = new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
     day: 'numeric',
@@ -542,6 +712,40 @@ const handleRegenerate = () => {
         .finally(() => {
             storyLoading.value = false
         })
+}
+
+const handleWordSearch = () => {
+    if (!wordSearch.value.trim()) {
+        ElMessage.warning('请输入英文单词')
+        return
+    }
+    wordCardLoading.value = true
+    window.setTimeout(() => {
+        wordCard.word = wordSearch.value.trim()
+        wordCard.part_of_speech = 'verb'
+        wordCard.definitions = [
+            {
+                meaning: `示例释义：${wordCard.word} 的 Merriam-Webster 解释`,
+                examples: ['此处将在接入后端后展示真实例句。'],
+            },
+        ]
+        wordCard.synonyms = ['synonym']
+        wordCard.antonyms = []
+        wordCard.chinese_translation = `${wordCard.word} 的中文释义示例`
+        wordCardLoading.value = false
+        ElMessage.info('界面预览，等待后端接入 Merriam-Webster API')
+    }, 600)
+}
+
+const playWordAudio = (url?: string) => {
+    if (!url) {
+        ElMessage.warning('暂无音频资源')
+        return
+    }
+    const audio = new Audio(url)
+    audio.play().catch(() => {
+        ElMessage.error('音频播放失败，请稍后重试')
+    })
 }
 
 const handleConversationSend = () => {
@@ -759,38 +963,30 @@ watch(
         min-height: 0;
         overflow: hidden;
 
-        &.conversation-card,
-        &.word-card {
-            :deep(.el-card__body) {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                min-height: 0;
-                padding-top: 0;
-            }
+        :deep(.el-card__body) {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding-top: 0;
         }
     }
 
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-
-        .title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .subtitle {
-            font-size: 13px;
-            color: var(--el-text-color-secondary);
-        }
-    }
-
-    .conversation-card {
+    /* ⭐ 这里把 side-card 也做成标准“可滚动卡片”布局 */
+    .side-card {
         display: flex;
         flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+
+        :deep(.el-card__body) {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding-top: 0;
+        }
 
         .conversation-body {
             flex: 1;
@@ -879,73 +1075,266 @@ watch(
         }
     }
 
-    .word-card {
-        &__body {
-            position: relative;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-height: 0;
+    .side-tabs {
+        :deep(.el-tabs__header) {
+            margin-bottom: 12px;
+        }
+    }
+
+    .pane-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+
+        .title {
+            font-size: 16px;
+            font-weight: 600;
         }
 
-        .word-index {
-            position: absolute;
-            top: 0;
-            right: 0;
-            font-size: 12px;
+        .subtitle {
+            font-size: 13px;
             color: var(--el-text-color-secondary);
         }
+    }
 
-        .word-main {
-            .word {
-                font-size: 28px;
-                font-weight: 700;
-                text-transform: capitalize;
-            }
+    /* ⭐ 单词卡片区域相关 */
 
-            .phonetic {
-                color: var(--el-text-color-secondary);
-                margin-top: 4px;
-            }
+    /* 单词卡片区域整体还是占满卡片高度 */
+    .word-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
 
-            .translation {
-                margin-top: 8px;
-                font-size: 15px;
-            }
+    /* 上面是搜索框，下面整块是“可滚动内容区” */
+    .word-card__body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ⭐ 关键：把真正滚动的容器高度“锁死”，超出的就滚动 */
+    .word-scroll {
+        max-height: 380px;
+    }
+
+    /* ⭐ el-scrollbar 内部真正负责滚动的是这个 wrap，我们在这里做限制 */
+    .word-scroll :deep(.el-scrollbar_wrap),
+    .word-scroll :deep(.el-scrollbar_wrap--hidden-default) {
+        max-height: 380px;
+        overflow-y: auto;
+    }
+
+    /* 可选：让 view 至少跟 wrap 一样高 */
+    .word-scroll :deep(.el-scrollbar_view) {
+        min-height: 100%;
+    }
+
+    .word-index {
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+    }
+
+    .word-main {
+        .word-text {
+            font-size: 28px;
+            font-weight: 700;
+            text-transform: capitalize;
         }
 
-        .word-detail,
-        .usage-example {
-            background: var(--el-fill-color-lighter);
-            border-radius: 10px;
-            padding: 12px;
-
-            .label {
-                font-size: 12px;
-                color: var(--el-text-color-secondary);
-                margin-bottom: 6px;
-                letter-spacing: 0.1em;
-            }
-
-            p {
-                margin: 0;
-                line-height: 1.6;
-                font-size: 14px;
-            }
+        .word-phonetic {
+            color: var(--el-text-color-secondary);
+            margin-top: 4px;
         }
 
-        .card-actions {
+        .word-translation {
+            margin-top: 8px;
+            font-size: 15px;
+        }
+    }
+
+    .word-example,
+    .word-note {
+        margin: 0;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .card-actions {
+        display: flex;
+        align-items: center;
+
+        .el-button {
+            padding: 4px;
+        }
+    }
+
+    .word-search {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .word-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+
+        .word-label {
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            color: var(--el-color-primary);
+        }
+
+        .word-title {
             display: flex;
+            gap: 10px;
             align-items: center;
 
-            .el-button {
-                padding: 4px;
+            span {
+                font-size: 26px;
+                font-weight: 600;
+                text-transform: capitalize;
+            }
+        }
+
+        .word-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .word-tags {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .word-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            color: var(--el-text-color-secondary);
+            font-size: 13px;
+
+            .audio-icon {
+                color: var(--el-color-primary);
+                font-size: 16px;
             }
         }
     }
+
+    .word-basic {
+        background: var(--el-fill-color-lighter);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .phonetics {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .phonetic-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .phonetic-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: var(--el-color-primary-light-9);
+        font-family: 'JetBrains Mono', monospace;
+
+        .phonetic-audio {
+            padding: 0;
+            background: rgba(255, 255, 255, 0.6);
+
+            :deep(.el-icon) {
+                color: var(--el-color-primary);
+                font-size: 16px;
+            }
+        }
+    }
+
+    .variants {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .label {
+            color: var(--el-text-color-secondary);
+        }
+    }
+
+    .info-block {
+        background: var(--el-fill-color-lighter);
+        border-radius: 12px;
+        padding: 16px;
+
+        h4 {
+            margin: 0 0 10px;
+        }
+    }
+
+    .two-column {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+
+    .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .empty-tip {
+        margin: 0;
+        color: var(--el-text-color-secondary);
+    }
+
+    .definition-text {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    .example-list {
+        margin: 8px 0 0 16px;
+        padding: 0;
+        list-style: disc;
+        color: var(--el-text-color-secondary);
+    }
+
+    .etymology-text,
+    .translation-text {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .translation-text {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        background: var(--el-fill-color);
+    }
 }
 
+/* 左侧短文和右侧对话滚动条样式（单词卡片保持默认样式也可以） */
 :deep(.story-content .el-scrollbar__bar.is-vertical),
 :deep(.chat-scroll .el-scrollbar__bar.is-vertical) {
     width: 6px;
@@ -955,6 +1344,20 @@ watch(
 :deep(.story-content .el-scrollbar__thumb),
 :deep(.chat-scroll .el-scrollbar__thumb) {
     background-color: var(--el-color-primary-light-5);
+}
+
+:deep(.el-tabs__content) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+:deep(.el-tab-pane) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 @media (max-width: 1024px) {
