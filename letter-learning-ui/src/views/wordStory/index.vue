@@ -183,10 +183,16 @@
                                         <el-scrollbar class="word-scroll" always>
                                             <div class="word-header">
                                                 <div>
-                                                    <div class="word-label">Merriam-Webster</div>
                                                     <div class="word-title">
                                                         <span>{{ wordCard.word }}</span>
-                                                        <el-tag type="info" round>
+                                                        <el-tag
+                                                            v-if="wordCard.part_of_speech"
+                                                            class="pos-tag"
+                                                            type="info"
+                                                            size="small"
+                                                            effect="plain"
+                                                            round
+                                                        >
                                                             {{ wordCard.part_of_speech }}
                                                         </el-tag>
                                                     </div>
@@ -204,16 +210,13 @@
                                                 </div>
                                                 <div class="word-actions">
                                                     <el-button
+                                                        class="word-audio-btn"
                                                         text
                                                         type="primary"
                                                         @click="playWordAudio(wordCard.phonetics?.[0]?.audio_url)"
                                                     >
-                                                        <vab-remix-icon icon="volume-up-line" class="audio-icon" />
-                                                        发音
+                                                        <img :src="speakerIcon" alt="播放发音" class="audio-image" />
                                                     </el-button>
-                                                    <span v-if="wordCard.first_use_date">
-                                                        首次出现：{{ wordCard.first_use_date }}
-                                                    </span>
                                                 </div>
                                             </div>
 
@@ -221,20 +224,19 @@
                                                 <div class="phonetics">
                                                     <div class="phonetic-row">
                                                         <div
-                                                            v-for="item in wordCard.phonetics"
+                                                            v-for="item in primaryPhonetics"
                                                             :key="item.notation"
                                                             class="phonetic-item"
                                                         >
-                                                            <span>{{ item.notation }}</span>
+                                                            <span>{{ formatPhonetic(item.notation) }}</span>
                                                             <el-button
                                                                 v-if="item.audio_url"
                                                                 text
-                                                                circle
                                                                 size="small"
                                                                 class="phonetic-audio"
                                                                 @click="playWordAudio(item.audio_url)"
                                                             >
-                                                                <vab-remix-icon icon="volume-up-line" />
+                                                                <img :src="speakerIcon" alt="播放音标" />
                                                             </el-button>
                                                         </div>
                                                     </div>
@@ -263,76 +265,86 @@
                                                 </div>
                                             </div>
 
-                                            <section class="info-block">
+                                            <section class="info-block definition-block">
                                                 <h4>英文释义与例句</h4>
-                                                <el-timeline>
-                                                    <el-timeline-item
-                                                        v-for="(definition, index) in wordCard.definitions"
-                                                        :key="index"
-                                                        :timestamp="`释义 ${index + 1}`"
-                                                        color="#409eff"
-                                                    >
-                                                        <div class="definition-text">
-                                                            {{ definition.meaning }}
-                                                        </div>
-                                                        <ul
-                                                            v-if="definition.examples?.length"
-                                                            class="example-list"
+                                                <div
+                                                    v-for="(definition, index) in wordCard.definitions"
+                                                    :key="index"
+                                                    class="definition-item"
+                                                >
+                                                    <div class="definition-heading">
+                                                        <span class="definition-index">
+                                                            释义 {{ index + 1 }}
+                                                        </span>
+                                                        <el-button
+                                                            text
+                                                            size="small"
+                                                            class="translation-trigger"
+                                                            @click="toggleDefinitionTranslation(index)"
                                                         >
-                                                            <li
-                                                                v-for="(example, idx) in definition.examples"
-                                                                :key="idx"
-                                                            >
-                                                                {{ example }}
-                                                            </li>
-                                                        </ul>
-                                                    </el-timeline-item>
-                                                </el-timeline>
+                                                            中文释义
+                                                        </el-button>
+                                                    </div>
+                                                    <p class="definition-text">
+                                                        {{ definition.meaning }}
+                                                    </p>
+                                                    <p
+                                                        v-if="definitionTranslationsVisible[index]"
+                                                        class="definition-translation"
+                                                    >
+                                                        {{ definition.translation || '示例中文释义：等待 AI 翻译' }}
+                                                    </p>
+                                                    <ul
+                                                        v-if="definition.examples?.length"
+                                                        class="example-list"
+                                                    >
+                                                        <li
+                                                            v-for="(example, idx) in definition.examples"
+                                                            :key="idx"
+                                                        >
+                                                            {{ example }}
+                                                        </li>
+                                                    </ul>
+                                                </div>
                                             </section>
 
-                                            <section class="info-block two-column">
-                                                <div>
-                                                    <h4>同义词</h4>
-                                                    <div class="tag-list" v-if="wordCard.synonyms?.length">
-                                                        <el-tag
+                                            <section class="info-block syn-ant-block">
+                                                <div class="syn-ant-group">
+                                                    <div class="syn-ant-header">
+                                                        <h4>同义词</h4>
+                                                        <span class="group-count" v-if="wordCard.synonyms?.length">
+                                                            {{ wordCard.synonyms.length }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="chip-list" v-if="wordCard.synonyms?.length">
+                                                        <span
+                                                            class="chip chip-syn"
                                                             v-for="item in wordCard.synonyms"
                                                             :key="item"
-                                                            type="info"
                                                         >
                                                             {{ item }}
-                                                        </el-tag>
+                                                        </span>
                                                     </div>
                                                     <p v-else class="empty-tip">等待接口返回</p>
                                                 </div>
-                                                <div>
-                                                    <h4>反义词</h4>
-                                                    <div class="tag-list" v-if="wordCard.antonyms?.length">
-                                                        <el-tag
+                                                <div class="syn-ant-group">
+                                                    <div class="syn-ant-header">
+                                                        <h4>反义词</h4>
+                                                        <span class="group-count" v-if="wordCard.antonyms?.length">
+                                                            {{ wordCard.antonyms.length }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="chip-list" v-if="wordCard.antonyms?.length">
+                                                        <span
+                                                            class="chip chip-ant"
                                                             v-for="item in wordCard.antonyms"
                                                             :key="item"
-                                                            type="danger"
-                                                            effect="plain"
                                                         >
                                                             {{ item }}
-                                                        </el-tag>
+                                                        </span>
                                                     </div>
                                                     <p v-else class="empty-tip">暂无数据</p>
                                                 </div>
-                                            </section>
-
-                                            <section class="info-block">
-                                                <h4>词源与中文释义</h4>
-                                                <p class="etymology-text">
-                                                    {{ wordCard.etymology || '等待后端补充词源信息' }}
-                                                </p>
-                                                <el-alert
-                                                    type="info"
-                                                    :closable="false"
-                                                    title="中文释义将通过 AI 翻译生成"
-                                                />
-                                                <p class="translation-text">
-                                                    {{ wordCard.chinese_translation || '示例：放弃；抛弃' }}
-                                                </p>
                                             </section>
                                         </el-scrollbar>
                                     </div>
@@ -349,13 +361,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
     fetchTodayWordStory,
     generateWordStory,
     type WordStoryRecord,
 } from '@/api/wordStory'
+import speakerIcon from '@/assets/speaker-icon.svg'
 
 type WordInfo = {
     word: string
@@ -584,6 +597,7 @@ const currentWords = ref<string[]>(DEFAULT_WORDS.map((item) => item.word))
 const conversationInput = ref('')
 const activeSideTab = ref('conversation')
 const chatScrollbarRef = ref<{ setScrollTop: (value: number) => void }>()
+const definitionTranslationsVisible = ref<Record<number, boolean>>({})
 
 const wordSearch = ref('abandon')
 const wordCardLoading = ref(false)
@@ -608,24 +622,23 @@ const wordCard = reactive({
         {
             meaning:
                 'to give up to the control or influence of another person or agent',
+            translation: '将主导权或影响力交给他人',
             examples: [
                 'The explorer refused to abandon her dream despite the harsh weather.',
             ],
         },
         {
             meaning: 'to withdraw from often in the face of danger or difficulty',
+            translation: '在危险或困难面前撤离、放弃',
             examples: ['Villagers were forced to abandon their homes during the flood.'],
         },
     ],
     synonyms: ['cede', 'surrender', 'desert'],
     antonyms: ['keep', 'maintain'],
-    etymology: 'Middle English abandounen, from Anglo-French abandoner',
-    first_use_date: '14th century',
     labels: {
         general: ['often passive'],
         usage: ['formal'],
     },
-    chinese_translation: '放弃；抛弃',
 })
 
 const aiReplyTemplates = [
@@ -656,6 +669,11 @@ const displayWords = computed<WordInfo[]>(() =>
     })
 )
 
+const primaryPhonetics = computed(() => {
+    const list = wordCard.phonetics || []
+    return list.length ? [list[0]] : []
+})
+
 const storyParagraphs = computed(() =>
     storyText.value
         ? storyText.value
@@ -675,6 +693,9 @@ const wordCardLabels = computed(() => {
     const usage = wordCard.labels?.usage || []
     return [...general, ...usage]
 })
+
+const formatPhonetic = (notation?: string) =>
+    notation?.replace(/\s*\(.*?\)\s*$/, '') ?? ''
 
 const displayDate = new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
@@ -726,15 +747,23 @@ const handleWordSearch = () => {
         wordCard.definitions = [
             {
                 meaning: `示例释义：${wordCard.word} 的 Merriam-Webster 解释`,
+                translation: `${wordCard.word} 的中文释义示例`,
                 examples: ['此处将在接入后端后展示真实例句。'],
             },
         ]
         wordCard.synonyms = ['synonym']
         wordCard.antonyms = []
-        wordCard.chinese_translation = `${wordCard.word} 的中文释义示例`
         wordCardLoading.value = false
         ElMessage.info('界面预览，等待后端接入 Merriam-Webster API')
     }, 600)
+}
+
+const toggleDefinitionTranslation = (index: number) => {
+    const current = definitionTranslationsVisible.value[index] ?? false
+    definitionTranslationsVisible.value = {
+        ...definitionTranslationsVisible.value,
+        [index]: !current,
+    }
 }
 
 const playWordAudio = (url?: string) => {
@@ -835,6 +864,14 @@ watch(
     () => {
         activeWordIndex.value = 0
     }
+)
+
+watch(
+    () => wordCard.definitions,
+    () => {
+        definitionTranslationsVisible.value = {}
+    },
+    { deep: true }
 )
 </script>
 
@@ -1112,6 +1149,7 @@ watch(
         flex: 1;
         display: flex;
         flex-direction: column;
+        gap: 16px;
     }
 
     /* ⭐ 关键：把真正滚动的容器高度“锁死”，超出的就滚动 */
@@ -1185,12 +1223,6 @@ watch(
         gap: 16px;
         align-items: flex-start;
 
-        .word-label {
-            font-size: 12px;
-            letter-spacing: 0.2em;
-            color: var(--el-color-primary);
-        }
-
         .word-title {
             display: flex;
             gap: 10px;
@@ -1201,11 +1233,6 @@ watch(
                 font-weight: 600;
                 text-transform: capitalize;
             }
-        }
-
-        .word-controls {
-            display: flex;
-            gap: 4px;
         }
 
         .word-tags {
@@ -1223,11 +1250,35 @@ watch(
             color: var(--el-text-color-secondary);
             font-size: 13px;
 
-            .audio-icon {
-                color: var(--el-color-primary);
-                font-size: 16px;
+            .word-audio-btn {
+                padding: 0;
+                background: transparent;
+                border: none;
+                min-height: auto;
+                line-height: 0;
+
+                &:hover {
+                    background: transparent;
+                    transform: scale(1.05);
+                }
+            }
+
+            .audio-image {
+                width: 32px;
+                height: 32px;
+                display: block;
             }
         }
+    }
+
+    .pos-tag {
+        font-size: 8px;
+        line-height: 1;
+        text-transform: lowercase;
+        padding: 2px 6px;
+        color: var(--el-text-color-secondary);
+        background: var(--el-fill-color);
+        border-color: var(--el-border-color);
     }
 
     .word-basic {
@@ -1262,11 +1313,18 @@ watch(
 
         .phonetic-audio {
             padding: 0;
-            background: rgba(255, 255, 255, 0.6);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
-            :deep(.el-icon) {
-                color: var(--el-color-primary);
-                font-size: 16px;
+            img {
+                width: 20px;
+                height: 20px;
             }
         }
     }
@@ -1291,18 +1349,6 @@ watch(
         }
     }
 
-    .two-column {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-    }
-
-    .tag-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
     .empty-tip {
         margin: 0;
         color: var(--el-text-color-secondary);
@@ -1320,17 +1366,101 @@ watch(
         color: var(--el-text-color-secondary);
     }
 
-    .etymology-text,
-    .translation-text {
-        margin: 0;
-        line-height: 1.6;
+    .definition-block {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
     }
 
-    .translation-text {
-        margin-top: 10px;
-        padding: 10px;
-        border-radius: 10px;
+    .definition-item {
+        padding: 12px;
+        border-radius: 12px;
         background: var(--el-fill-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .definition-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .definition-index {
+        font-weight: 600;
+        color: var(--el-color-primary);
+    }
+
+    .translation-trigger {
+        font-size: 12px;
+        padding: 0 8px;
+    }
+
+    .definition-translation {
+        margin: 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--el-color-info-light-9);
+        font-size: 14px;
+        color: var(--el-color-info-dark-2);
+    }
+
+    .syn-ant-block {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .syn-ant-group {
+        background: var(--el-fill-color-lighter);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .syn-ant-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+
+        h4 {
+            margin: 0;
+        }
+    }
+
+    .group-count {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+    }
+
+    .chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .chip {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        line-height: 1.2;
+        background: var(--el-fill-color-dark);
+    }
+
+    .chip-syn {
+        border: 1px solid var(--el-color-success-light-5);
+        background: var(--el-color-success-light-9);
+        color: var(--el-color-success-dark-2);
+    }
+
+    .chip-ant {
+        border: 1px solid var(--el-color-danger-light-5);
+        background: var(--el-color-danger-light-9);
+        color: var(--el-color-danger-dark-2);
     }
 }
 
