@@ -8,6 +8,8 @@ export type WordStoryRecord = {
     story_text: string
     story_tokens?: number
     model_name?: string
+    image_url?: string
+    image_caption?: string
 }
 
 export function fetchTodayWordStory(

@@ -60,16 +60,42 @@
                         show-icon
                     />
 
-                    <el-scrollbar class="story-content" always>
-                        <transition-group name="paragraph-fade" tag="div">
-                            <p
-                                v-for="(paragraph, index) in storyParagraphs"
-                                :key="`paragraph-${index}`"
-                            >
-                                {{ paragraph }}
-                            </p>
-                        </transition-group>
-                    </el-scrollbar>
+                    <div class="story-content-wrapper">
+                        <div class="story-visual-fixed">
+                            <div class="visual-frame" v-if="storyImageUrl">
+                                <el-image
+                                    :src="storyImageUrl"
+                                    fit="cover"
+                                    :preview-src-list="[storyImageUrl]"
+                                >
+                                    <template #error>
+                                        <div class="image-fallback">
+                                            <vab-remix-icon icon="image-line" />
+                                            <span>插图加载失败</span>
+                                        </div>
+                                    </template>
+                                </el-image>
+                            </div>
+                            <div class="visual-frame placeholder" v-else>
+                                <div class="image-fallback">
+                                    <vab-remix-icon icon="image-add-line" />
+                                    <span>生成插图后将在此展示</span>
+                                </div>
+                            </div>
+                        </div>
+                        <el-scrollbar class="story-content" always>
+                            <div class="story-flow">
+                                <transition-group name="paragraph-fade" tag="div">
+                                    <p
+                                        v-for="(paragraph, index) in storyParagraphs"
+                                        :key="`paragraph-${index}`"
+                                    >
+                                        {{ paragraph }}
+                                    </p>
+                                </transition-group>
+                            </div>
+                        </el-scrollbar>
+                    </div>
                 </el-card>
             </el-col>
 
@@ -94,66 +120,61 @@
                                 </span>
                             </template>
                             <el-tab-pane label="AI 对话" name="conversation">
-                                <div class="pane-header">
-                                    <div>
-                                        <div class="title">AI 对话区</div>
-                                        <div class="subtitle">
-                                            结合短文内容随时追问、做语法复盘
-                                        </div>
-                                    </div>
-                                    <el-tag type="success" size="small">预览</el-tag>
-                                </div>
-                                <div class="conversation-body">
-                                    <div class="chat-intro">
-                                        <div class="chat-title">多轮对话（演示）</div>
-                                        <div class="chat-prompts">
-                                            <el-tag
-                                                v-for="prompt in quickPrompts"
-                                                :key="prompt"
-                                                size="small"
-                                                effect="plain"
-                                                @click="handleQuickPrompt(prompt)"
-                                            >
-                                                {{ prompt }}
-                                            </el-tag>
-                                        </div>
-                                    </div>
-                                    <el-scrollbar ref="chatScrollbarRef" class="chat-scroll" always>
-                                        <div
-                                            v-for="message in conversationMessages"
-                                            :key="message.id"
-                                            class="chat-bubble"
-                                            :class="message.sender"
+                                <div class="conversation-section">
+                                    <div class="conversation-section__header">
+                                        <el-button
+                                            class="start-conversation-btn"
+                                            type="primary"
+                                            :loading="conversationSessionLoading"
+                                            :disabled="!isStoryReady || conversationSessionLoading"
+                                            @click="startNewConversation"
                                         >
-                                            <div class="bubble-meta">
-                                                <span class="sender">
-                                                    {{ message.sender === 'ai' ? '智能体' : '我' }}
-                                                </span>
-                                                <span class="time">{{ message.time }}</span>
+                                            开始新对话
+                                        </el-button>
+                                    </div>
+                                    <div class="conversation-section__body">
+                                        <el-scrollbar ref="chatScrollbarRef" class="chat-scroll" always>
+                                            <div
+                                                v-for="message in conversationMessages"
+                                                :key="message.id"
+                                                class="chat-message"
+                                                :class="message.sender"
+                                            >
+                                                <el-avatar
+                                                    class="chat-avatar"
+                                                    :src="
+                                                        message.sender === 'ai'
+                                                            ? aiAvatar
+                                                            : userAvatar || defaultUserAvatar
+                                                    "
+                                                />
+                                                <div class="chat-bubble">
+                                                    <p class="bubble-text">{{ message.text }}</p>
+                                                </div>
                                             </div>
-                                            <p class="bubble-text">{{ message.text }}</p>
-                                        </div>
-                                    </el-scrollbar>
-                                    <div class="conversation-input">
+                                        </el-scrollbar>
+                                    </div>
+                                    <div class="conversation-section__footer">
                                         <el-input
                                             v-model="conversationInput"
-                                            type="textarea"
-                                            placeholder="就短文抛出一个问题，或请 AI 帮你改写句子"
-                                            :rows="3"
-                                            resize="none"
-                                            class="chat-textarea"
+                                            placeholder="问短文相关的任何问题"
+                                            class="chat-inline-input"
+                                            @keyup.enter="handleConversationSend"
                                         />
-                                        <div class="input-actions">
-                                            <el-button text size="small" @click="handleClearInput">清空</el-button>
-                                            <el-button
-                                                type="primary"
-                                                :disabled="!conversationInput.trim()"
-                                                @click="handleConversationSend"
-                                            >
-                                                <vab-remix-icon icon="send-plane-2-line" />
-                                                发送
-                                            </el-button>
-                                        </div>
+                                        <el-button
+                                            type="primary"
+                                            class="chat-send-btn"
+                                            :disabled="
+                                                chatSending ||
+                                                !activeChatSession ||
+                                                !conversationInput.trim()
+                                            "
+                                            :loading="chatSending"
+                                            @click="handleConversationSend"
+                                        >
+                                            <vab-remix-icon icon="send-plane-2-line" />
+                                            发送
+                                        </el-button>
                                     </div>
                                 </div>
                             </el-tab-pane>
@@ -370,15 +391,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+} from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     fetchTodayWordStory,
     generateWordStory,
     type WordStoryRecord,
 } from '@/api/wordStory'
+import {
+    createAiChatSession,
+    sendAiChatMessage,
+} from '@/api/aiChat'
+import type { AiChatMessage, AiChatSession } from '@/api/aiChat'
 import { lookupDictionaryEntry, translateDefinition } from '@/api/dictionary'
 import speakerIcon from '@/assets/speaker-icon.svg'
+import { useUserStore } from '@/store/modules/user'
+import { storeToRefs } from 'pinia'
 
 type WordInfo = {
     word: string
@@ -388,11 +424,11 @@ type WordInfo = {
     note: string
 }
 
-type PreviewMessage = {
+type ConversationMessage = {
     id: number
     sender: 'ai' | 'user'
     text: string
-    time: string
+    createdAt: string
 }
 
 const DEFAULT_WORDS: WordInfo[] = [
@@ -566,48 +602,88 @@ const fallbackWordInfo: WordInfo = {
     note: '',
 }
 
-const conversationMessages = ref<PreviewMessage[]>([
-    {
-        id: 1,
-        sender: 'ai',
-        text: '这段短文强调以“调查者心态”复盘单词，等上线后我可以针对细节继续追问。',
-        time: '09:10',
-    },
-    {
-        id: 2,
-        sender: 'user',
-        text: '我觉得 evidence 这一段还可以更生动一些，怎么改更好？',
-        time: '09:10',
-    },
-    {
-        id: 3,
-        sender: 'ai',
-        text: '可以尝试把 evidence 的来源具象化，比如“旧笔记里被圈起的短句”。',
-        time: '09:11',
-    },
-    {
-        id: 4,
-        sender: 'user',
-        text: '那 maintain 这个词是不是也应该在结尾再出现一次？',
-        time: '09:12',
-    },
-    {
-        id: 5,
-        sender: 'ai',
-        text: '是的，结尾强调保持习惯，可以加强整段的闭合感。',
-        time: '09:12',
-    },
-])
+const userStore = useUserStore()
+const { avatar: userAvatar } = storeToRefs(userStore)
+const aiAvatar = new URL('@/assets/lumilyx-avatar.jpeg', import.meta.url).href
+const defaultUserAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
+const MAX_CHAT_ROUNDS = 12
+const conversationMessages = ref<ConversationMessage[]>([])
+const activeChatSession = ref<AiChatSession | null>(null)
+const conversationSessionLoading = ref(false)
+const conversationSending = ref(false)
+
+const mapBackendMessage = (message: AiChatMessage): ConversationMessage => ({
+    id: message.id,
+    sender: message.sender,
+    text: message.content,
+    createdAt: message.created_at,
+})
+
+const showRoundLimitAlert = () =>
+    ElMessageBox.alert('每次对话最多持续12轮', '提示', {
+        confirmButtonText: '我知道了',
+    }).catch(() => undefined)
+
+const appendMessages = (messages: AiChatMessage[]) => {
+    if (!messages || !messages.length) return
+    conversationMessages.value = [
+        ...conversationMessages.value,
+        ...messages.map(mapBackendMessage),
+    ]
+}
+
+const createLocalMessage = (
+    text: string,
+    sender: 'ai' | 'user'
+): ConversationMessage => ({
+    id: Date.now(),
+    sender,
+    text,
+    createdAt: new Date().toISOString(),
+})
+
+const pushLocalUserMessage = (text: string) => {
+    const message = createLocalMessage(text, 'user')
+    conversationMessages.value = [...conversationMessages.value, message]
+    nextTick(scrollChatToBottom)
+    return message.id
+}
+
+const removeMessageById = (id: number) => {
+    const index = conversationMessages.value.findIndex(
+        (item) => item.id === id
+    )
+    if (index !== -1) {
+        const list = [...conversationMessages.value]
+        list.splice(index, 1)
+        conversationMessages.value = list
+    }
+}
 
 const storyLoading = ref(false)
 const pageLoading = ref(true)
 const storyText = ref('')
+const currentStoryId = ref<number | null>(null)
+const storyImageUrl = ref('')
+const storyImageCaption = ref('')
 const activeWordIndex = ref(0)
 const currentWords = ref<string[]>(DEFAULT_WORDS.map((item) => item.word))
 const conversationInput = ref('')
 const activeSideTab = ref('conversation')
 const chatScrollbarRef = ref<{ setScrollTop: (value: number) => void }>()
 const definitionTranslationsVisible = ref<Record<number, boolean>>({})
+const isStoryReady = computed(() => !!storyText.value.trim())
+const currentStoryKey = computed(() => {
+    const snapshot = storyText.value.trim()
+    if (currentStoryId.value) {
+        return `id:${currentStoryId.value}|text:${snapshot}`
+    }
+    return snapshot ? `text:${snapshot}` : ''
+})
+const lastStoryKeyUsed = ref('')
+const pendingAutoConversation = ref(false)
+const PAGE_LAYOUT_CLASS = 'word-story-no-footer'
 
 const wordSearch = ref('abandon')
 const wordCardLoading = ref(false)
@@ -655,19 +731,6 @@ const wordCard = reactive({
     },
     etymology: '',
 })
-
-const aiReplyTemplates = [
-    '收到，我可以从结构、语气或证据角度再补充分析。',
-    '好的，等正式接入后我会引用短文中的句子来佐证观点。',
-    '了解，我稍后可以帮你总结 impact 相关的搭配。',
-    '可以的，我们还能一起改写段落，保持词汇出现频率。',
-]
-
-const quickPrompts = [
-    '请帮我提炼短文的主旨句？',
-    '把 impact 相关的句子换成更口语化的表达。',
-    '指出 maintain 出现的句子是否需要调整时态。',
-]
 
 const displayWords = computed<WordInfo[]>(() =>
     currentWords.value.map((word) => {
@@ -718,23 +781,13 @@ const displayDate = new Intl.DateTimeFormat('zh-CN', {
     weekday: 'long',
 }).format(new Date())
 
-const formatTime = () =>
-    new Intl.DateTimeFormat('zh-CN', {
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date())
-
 const scrollChatToBottom = () => {
     chatScrollbarRef.value?.setScrollTop?.(9999)
 }
 
 const handleRegenerate = () => {
-    const fallbackWords = currentWords.value.length
-        ? currentWords.value
-        : DEFAULT_WORDS.map((item) => item.word)
     storyLoading.value = true
     generateWordStory({
-        words: fallbackWords,
         force: true,
     })
         .then((response) => {
@@ -856,40 +909,107 @@ const playWordAudio = (url?: string) => {
     })
 }
 
-const handleConversationSend = () => {
+const startNewConversation = async () => {
+    if (conversationSessionLoading.value) return
+    if (!isStoryReady.value) {
+        ElMessage.warning('短文尚未加载完成')
+        return
+    }
+    conversationSessionLoading.value = true
+    try {
+        const { data } = await createAiChatSession({
+            story_text: storyText.value,
+            word_story_id: currentStoryId.value ?? undefined,
+        })
+        activeChatSession.value = data.session
+        conversationMessages.value = data.messages.map(mapBackendMessage)
+        lastStoryKeyUsed.value = currentStoryKey.value
+        conversationInput.value = ''
+        nextTick(scrollChatToBottom)
+    } catch (error: any) {
+        const message =
+            error?.msg || error?.message || '开启新对话失败，请稍后再试'
+        ElMessage.error(message)
+    } finally {
+        conversationSessionLoading.value = false
+    }
+}
+
+const requestAutoConversationStart = () => {
+    if (!isStoryReady.value) return
+    pendingAutoConversation.value = true
+    if (!conversationSessionLoading.value) {
+        pendingAutoConversation.value = false
+        startNewConversation().catch(() => {})
+    }
+}
+
+const handleConversationSend = async () => {
     const text = conversationInput.value.trim()
     if (!text) return
 
-    conversationMessages.value.push({
-        id: Date.now(),
-        sender: 'user',
-        text,
-        time: formatTime(),
-    })
-    conversationInput.value = ''
-    nextTick(scrollChatToBottom)
+    if (!activeChatSession.value || conversationSessionLoading.value) {
+        ElMessage.warning('请先开始新对话')
+        return
+    }
 
-    window.setTimeout(() => {
-        conversationMessages.value.push({
-            id: Date.now(),
-            sender: 'ai',
-            text:
-                aiReplyTemplates[
-                    Math.floor(Math.random() * aiReplyTemplates.length)
-                ],
-            time: formatTime(),
-        })
+    if (activeChatSession.value.total_rounds >= MAX_CHAT_ROUNDS) {
+        await showRoundLimitAlert()
+        return
+    }
+
+    if (conversationSending.value) return
+    conversationSending.value = true
+    const localMessageId = pushLocalUserMessage(text)
+    conversationInput.value = ''
+    try {
+        const { data } = await sendAiChatMessage(
+            activeChatSession.value.id,
+            text
+        )
+        const aiMessages = (data.new_messages || []).filter(
+            (item) => item.sender === 'ai'
+        )
+        appendMessages(aiMessages)
+        activeChatSession.value = data.session
         nextTick(scrollChatToBottom)
-    }, 600)
+    } catch (error: any) {
+        removeMessageById(localMessageId)
+        conversationInput.value = text
+        const message =
+            error?.msg || error?.message || '发送失败，请稍后重试'
+        if (message.includes('每次对话最多持续12轮')) {
+            await showRoundLimitAlert()
+            if (activeChatSession.value) {
+                activeChatSession.value.total_rounds = MAX_CHAT_ROUNDS
+                activeChatSession.value.status = 'completed'
+            }
+        } else {
+            ElMessage.error(message)
+        }
+    } finally {
+        conversationSending.value = false
+    }
 }
 
-const handleQuickPrompt = (prompt: string) => {
-    conversationInput.value = prompt
-}
+watch(
+    () => currentStoryKey.value,
+    (key) => {
+        if (!key) return
+        if (key === lastStoryKeyUsed.value) return
+        requestAutoConversationStart()
+    }
+)
 
-const handleClearInput = () => {
-    conversationInput.value = ''
-}
+watch(
+    () => conversationSessionLoading.value,
+    (loading) => {
+        if (!loading && pendingAutoConversation.value) {
+            pendingAutoConversation.value = false
+            startNewConversation().catch(() => {})
+        }
+    }
+)
 
 const nextWord = () => {
     const total = displayWords.value.length || 1
@@ -904,7 +1024,10 @@ const prevWord = () => {
 
 const updateStoryState = (record?: WordStoryRecord) => {
     if (!record) return
+    currentStoryId.value = record.id ?? null
     storyText.value = (record.story_text || '').trim()
+    storyImageUrl.value = record.image_url || ''
+    storyImageCaption.value = record.image_caption || ''
     if (record.words && record.words.length) {
         currentWords.value = record.words
     }
@@ -913,6 +1036,9 @@ const updateStoryState = (record?: WordStoryRecord) => {
 
 const resetStoryState = () => {
     storyText.value = ''
+    currentStoryId.value = null
+    storyImageUrl.value = ''
+    storyImageCaption.value = ''
     currentWords.value = DEFAULT_WORDS.map((item) => item.word)
     activeWordIndex.value = 0
 }
@@ -936,7 +1062,14 @@ const loadTodayStory = async () => {
     }
 }
 
-onMounted(loadTodayStory)
+onMounted(() => {
+    document.body.classList.add(PAGE_LAYOUT_CLASS)
+    loadTodayStory()
+})
+
+onBeforeUnmount(() => {
+    document.body.classList.remove(PAGE_LAYOUT_CLASS)
+})
 
 watch(
     () => currentWords.value,
@@ -1040,26 +1173,84 @@ watch(
             margin-bottom: 16px;
         }
 
-        .story-content {
+        .story-content-wrapper {
             flex: 1;
             min-height: 0;
-            padding-right: 4px;
-            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(160px, 20%) 1fr;
+            gap: 24px;
 
-            p {
-                font-size: 15px;
-                line-height: 1.8;
-                margin-bottom: 16px;
-                text-indent: 24px;
+            .story-visual-fixed {
+                position: sticky;
+                top: 0;
+                align-self: flex-start;
+
+                .visual-frame {
+                    width: 100%;
+                    max-width: 240px;
+                    aspect-ratio: 682 / 1024;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.1);
+                    background: var(--el-fill-color-light);
+
+                    :deep(.el-image) {
+                        width: 100%;
+                        height: 100%;
+                    }
+
+                    &.placeholder {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        color: var(--el-text-color-secondary);
+                        gap: 6px;
+                        text-align: center;
+                        font-size: 12px;
+
+                        .vab-remix-icon {
+                            font-size: 18px;
+                        }
+                    }
+                }
             }
 
-            :deep(.el-scrollbar__wrap) {
-                height: 100%;
+            .story-content {
+                min-height: 0;
+                padding-right: 6px;
+
+                :deep(.el-scrollbar__wrap) {
+                    height: 100%;
+                    overflow-y: auto;
+                }
+
+                :deep(.el-scrollbar__view) {
+                    min-height: 100%;
+                    padding-right: 12px;
+                }
+
+                .story-flow {
+                    font-size: 15px;
+                    line-height: 1.8;
+                    color: var(--el-text-color-primary);
+                    text-indent: 24px;
+
+                    p {
+                        margin-bottom: 16px;
+                    }
+                }
             }
 
-            :deep(.el-scrollbar__view) {
-                min-height: 100%;
-                padding-right: 10px;
+            @media (max-width: 1024px) {
+                grid-template-columns: 1fr;
+
+                .story-visual-fixed {
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    margin-bottom: 12px;
+                }
             }
         }
     }
@@ -1104,32 +1295,56 @@ watch(
             padding-top: 0;
         }
 
-        .conversation-body {
-            flex: 1;
+        :deep(.el-tabs) {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            height: 100%;
             min-height: 0;
         }
 
-        .chat-intro {
-            border: 1px dashed var(--el-color-primary-light-5);
-            border-radius: 10px;
-            padding: 10px 12px;
-            background: var(--el-color-primary-light-9);
-        }
-
-        .chat-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--el-color-primary);
-        }
-
-        .chat-prompts {
+        :deep(.el-tabs__content) {
+            flex: 1;
+            min-height: 0;
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+            flex-direction: column;
+        }
+
+        :deep(.el-tab-pane) {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .conversation-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            gap: 14px;
+
+            &__header {
+                height: 64px;
+                display: flex;
+                align-items: center;
+            }
+
+            &__body {
+                flex: 1;
+                min-height: 0;
+                border: 1px dashed var(--el-color-primary-light-5);
+                border-radius: 12px;
+                padding: 12px;
+                display: flex;
+                flex-direction: column;
+            }
+
+            &__footer {
+                height: 52px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
         }
 
         .chat-scroll {
@@ -1137,35 +1352,46 @@ watch(
             min-height: 0;
             padding-right: 6px;
 
-            :deep(.el-scrollbar__wrap),
+            :deep(.el-scrollbar__wrap) {
+                height: 100%;
+            }
+
             :deep(.el-scrollbar__view) {
-                max-height: 100%;
+                min-height: 100%;
             }
         }
 
-        .chat-bubble {
-            padding: 12px;
-            border-radius: 12px;
-            background: var(--el-fill-color-lighter);
-            margin-bottom: 10px;
-            position: relative;
+        .chat-message {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
 
-            &.ai {
-                border-left: 3px solid var(--el-color-primary);
+            &.ai .chat-bubble {
                 background: var(--el-color-primary-light-9);
             }
 
             &.user {
-                border-left: 3px solid var(--el-color-success);
+                flex-direction: row-reverse;
+
+                .chat-bubble {
+                    background: var(--el-fill-color);
+                    text-align: left;
+                }
             }
         }
 
-        .bubble-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            margin-bottom: 4px;
-            color: var(--el-text-color-secondary);
+        .chat-avatar {
+            width: 38px;
+            height: 38px;
+        }
+
+        .chat-bubble {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: var(--el-fill-color-lighter);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         }
 
         .bubble-text {
@@ -1174,19 +1400,21 @@ watch(
             line-height: 1.7;
         }
 
-        .conversation-input {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-
-            .chat-textarea :deep(textarea) {
-                font-size: 14px;
+        .conversation-section__footer {
+            .chat-inline-input {
+                flex: 1;
             }
 
-            .input-actions {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
+            .chat-inline-input :deep(.el-input__wrapper) {
+                height: 38px;
+                font-size: 14px;
+                border-radius: 10px;
+            }
+
+            .chat-send-btn {
+                height: 38px;
+                padding: 0 18px;
+                border-radius: 12px;
             }
         }
     }
@@ -1197,21 +1425,17 @@ watch(
         }
     }
 
-    .pane-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-
-        .title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .subtitle {
-            font-size: 13px;
-            color: var(--el-text-color-secondary);
-        }
+    .start-conversation-btn {
+        width: 100%;
+        justify-content: center;
+        font-size: 16px;
+        padding: 14px 0;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(64, 158, 255, 0.25);
+        background: #e6edff;
+        border: 1px solid rgba(64, 158, 255, 0.35);
+        font-weight: 600;
+        color: #2b4fb7;
     }
 
     /* ⭐ 单词卡片区域相关 */
@@ -1600,5 +1824,17 @@ watch(
 .paragraph-fade-enter-from,
 .paragraph-fade-leave-to {
     opacity: 0;
+}
+
+:global(body.word-story-no-footer) {
+    overflow: hidden;
+}
+
+:global(body.word-story-no-footer .vab-footer) {
+    display: none;
+}
+
+:global(body.word-story-no-footer .app-main) {
+    padding-bottom: 0;
 }
 </style>
