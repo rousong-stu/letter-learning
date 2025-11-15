@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime
+import logging
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -14,6 +15,8 @@ from app.repositories import token as token_repo
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenData, UserInfoData
 from app.services import auth as auth_service
 from app.services import profile as profile_service
+from app.services import word_story as word_story_service
+from app.services.word_story import WordStoryGenerationError
 from app.utils.response import error_response, success_response
 
 router = APIRouter()
@@ -21,6 +24,30 @@ DEFAULT_AVATAR = (
     "https://i.gtimg.cn/club/item/face/img/2/15922_100.gif"
 )  # 与前端默认头像保持一致
 INVITE_CODE = "letter-learning"
+logger = logging.getLogger(__name__)
+
+
+def _should_auto_generate_story(last_login_at: datetime | None) -> bool:
+    if not last_login_at:
+        return True
+    try:
+        return last_login_at.date() != date.today()
+    except Exception:
+        return True
+
+
+async def _auto_generate_story(session: AsyncSession, user: User) -> None:
+    try:
+        await word_story_service.generate_story(
+            session,
+            user,
+            story_date=date.today(),
+            force=True,
+        )
+    except WordStoryGenerationError as exc:
+        logger.warning("Auto regenerate story failed: %s", exc)
+    except Exception:
+        logger.exception("Unexpected error when auto regenerating story")
 
 
 @router.post("/login")
@@ -43,6 +70,7 @@ async def login(
 
     user_agent = request.headers.get("user-agent")
     ip_address = request.client.host if request.client else None
+    should_auto_generate = _should_auto_generate_story(user.last_login_at)
 
     try:
         token, refresh_token_record = await auth_service.issue_token_pair(
@@ -58,6 +86,8 @@ async def login(
             user_agent=user_agent,
             token_id=refresh_token_record.token,
         )
+        if should_auto_generate:
+            await _auto_generate_story(session, user)
         await session.commit()
     except Exception:
         await session.rollback()

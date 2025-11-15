@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import random
 from dataclasses import dataclass
 from datetime import date, datetime
 import json
@@ -48,6 +49,7 @@ COURSE_LABEL_MAP = {
 }
 DEFAULT_WORKFLOW_CLASS = "学习计划"
 DEFAULT_WORKFLOW_LEVEL = "通用词库"
+MAX_DAILY_GENERATIONS = 2
 
 
 @dataclass
@@ -179,6 +181,27 @@ def _map_course_label(code: str | None) -> str:
     return COURSE_LABEL_MAP.get(code, code) or DEFAULT_WORKFLOW_CLASS
 
 
+def _pick_default_words(count: int) -> list[str]:
+    pool = DEFAULT_SAMPLE_WORDS.copy()
+    random.shuffle(pool)
+    return pool[: max(1, min(count, len(pool)))]
+
+
+async def _pick_plan_words(
+    session: AsyncSession,
+    plan: UserWordBook,
+    count: int,
+) -> list[str]:
+    entries = await user_word_book_repo.list_unlearned_word_entries(
+        session, plan.id, count
+    )
+    if not entries:
+        return []
+    entry_ids = [entry_id for entry_id, _ in entries]
+    await user_word_book_repo.mark_words_learned(session, entry_ids)
+    return [word for _, word in entries]
+
+
 async def _prepare_workflow_inputs(
     session: AsyncSession,
     user: User,
@@ -186,36 +209,32 @@ async def _prepare_workflow_inputs(
     override_words: Iterable[str] | None,
 ) -> WorkflowInputs:
     plan = await user_word_book_repo.get_latest_by_user(session, user.id)
-    plan_words: list[str] = []
-    day_index: int | None = None
-
-    if plan:
-        day_index = _calculate_day_index(plan.start_date, story_date, plan.total_days)
-        plan_words = await user_word_book_repo.list_words_for_day(
-            session,
-            plan.id,
-            day_index,
-            plan.daily_quota or len(DEFAULT_SAMPLE_WORDS),
-        )
-
     normalized_override: list[str] | None = None
     if override_words:
         normalized_override = _normalize_words(override_words)
 
-    normalized_plan_words: list[str] | None = None
-    if plan_words:
-        normalized_plan_words = _normalize_words(plan_words)
+    words: list[str] = []
+    day_index: int | None = None
 
-    words = (
-        normalized_override
-        or normalized_plan_words
-        or _normalize_words(DEFAULT_SAMPLE_WORDS)
-    )
+    if normalized_override:
+        words = normalized_override
+    elif plan:
+        day_index = _calculate_day_index(plan.start_date, story_date, plan.total_days)
+        target_count = plan.daily_quota or len(DEFAULT_SAMPLE_WORDS)
+        plan_words = await _pick_plan_words(session, plan, target_count)
+        if plan_words:
+            words = plan_words
+            if len(words) < target_count:
+                words.extend(_pick_default_words(target_count - len(words)))
+
+    if not words:
+        words = _pick_default_words(len(DEFAULT_SAMPLE_WORDS))
+
     user_class = _map_course_label(plan.course_code if plan else None)
     english_level = (
         plan.book.title if plan and plan.book and plan.book.title else DEFAULT_WORKFLOW_LEVEL
     )
-    target_word_num = plan.daily_quota if plan and plan.daily_quota else len(words)
+    target_word_num = len(words)
     conversation_name = f"{user.username}-{story_date.isoformat()}"
 
     return WorkflowInputs(
@@ -369,8 +388,19 @@ async def generate_story(
     existing = await word_story_repo.get_by_user_and_date(
         session, user.id, story_date
     )
+    existing_extra = (
+        existing.extra.copy() if existing and isinstance(existing.extra, dict) else {}
+    )
+    current_generation_count = int(existing_extra.get("generation_count") or 0)
+
     if existing and not force:
         return existing
+    if existing and force and current_generation_count >= MAX_DAILY_GENERATIONS:
+        raise WordStoryGenerationError(
+            "您今天已经连续学习了两篇文章了，学习需要循序渐进，休息一下，明天再学习吧！"
+        )
+
+    next_generation_count = current_generation_count + 1 if existing else 1
 
     workflow_inputs = await _prepare_workflow_inputs(
         session, user, story_date, words
@@ -400,6 +430,7 @@ async def generate_story(
     primary_image_url = image_urls[0] if image_urls else None
 
     extra = {
+        **existing_extra,
         "chat_id": chat_meta.get("chat_id"),
         "conversation_id": chat_meta.get("conversation_id"),
         "usage": usage,
@@ -411,6 +442,7 @@ async def generate_story(
             "target_word_num": workflow_inputs.target_word_num,
             "day_index": workflow_inputs.day_index,
         },
+        "generation_count": next_generation_count,
     }
 
     if existing:

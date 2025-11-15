@@ -33,7 +33,7 @@
                                     @click="handleRegenerate"
                                 >
                                     <vab-remix-icon icon="refresh-line" />
-                                    重新生成
+                                    再学一篇
                                 </el-button>
                             </div>
                         </div>
@@ -149,7 +149,17 @@
                                                     "
                                                 />
                                                 <div class="chat-bubble">
-                                                    <p class="bubble-text">{{ message.text }}</p>
+                                                    <div
+                                                        v-if="message.status === 'pending'"
+                                                        class="bubble-loading"
+                                                    >
+                                                        <span class="dot" />
+                                                        <span class="dot" />
+                                                        <span class="dot" />
+                                                    </div>
+                                                    <p v-else class="bubble-text">
+                                                        {{ message.text }}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </el-scrollbar>
@@ -429,6 +439,7 @@ type ConversationMessage = {
     sender: 'ai' | 'user'
     text: string
     createdAt: string
+    status?: 'pending' | 'done'
 }
 
 const DEFAULT_WORDS: WordInfo[] = [
@@ -618,7 +629,10 @@ const mapBackendMessage = (message: AiChatMessage): ConversationMessage => ({
     sender: message.sender,
     text: message.content,
     createdAt: message.created_at,
+    status: 'done',
 })
+
+let localMessageSeed = -1
 
 const showRoundLimitAlert = () =>
     ElMessageBox.alert('每次对话最多持续12轮', '提示', {
@@ -635,12 +649,14 @@ const appendMessages = (messages: AiChatMessage[]) => {
 
 const createLocalMessage = (
     text: string,
-    sender: 'ai' | 'user'
+    sender: 'ai' | 'user',
+    status: ConversationMessage['status'] = 'done'
 ): ConversationMessage => ({
-    id: Date.now(),
+    id: localMessageSeed--,
     sender,
     text,
     createdAt: new Date().toISOString(),
+    status,
 })
 
 const pushLocalUserMessage = (text: string) => {
@@ -659,6 +675,32 @@ const removeMessageById = (id: number) => {
         list.splice(index, 1)
         conversationMessages.value = list
     }
+}
+
+const upsertPendingAiMessage = () => {
+    const message = createLocalMessage('', 'ai', 'pending')
+    conversationMessages.value = [...conversationMessages.value, message]
+    nextTick(scrollChatToBottom)
+    return message.id
+}
+
+const updateMessageContent = (
+    id: number,
+    text: string,
+    status: ConversationMessage['status'] = 'done'
+) => {
+    const index = conversationMessages.value.findIndex(
+        (item) => item.id === id
+    )
+    if (index === -1) return
+    const list = [...conversationMessages.value]
+    list[index] = {
+        ...list[index],
+        text,
+        status,
+    }
+    conversationMessages.value = list
+    nextTick(scrollChatToBottom)
 }
 
 const storyLoading = ref(false)
@@ -796,7 +838,7 @@ const handleRegenerate = () => {
         })
         .catch((error) => {
             console.error(error)
-            ElMessage.error('重新生成失败，请稍后重试')
+            ElMessage.error('再学一篇失败，请稍后重试')
         })
         .finally(() => {
             storyLoading.value = false
@@ -961,6 +1003,7 @@ const handleConversationSend = async () => {
     if (conversationSending.value) return
     conversationSending.value = true
     const localMessageId = pushLocalUserMessage(text)
+    const pendingAiId = upsertPendingAiMessage()
     conversationInput.value = ''
     try {
         const { data } = await sendAiChatMessage(
@@ -970,11 +1013,20 @@ const handleConversationSend = async () => {
         const aiMessages = (data.new_messages || []).filter(
             (item) => item.sender === 'ai'
         )
-        appendMessages(aiMessages)
+        if (aiMessages.length) {
+            const [first, ...rest] = aiMessages
+            updateMessageContent(pendingAiId, first.content, 'done')
+            if (rest.length) {
+                appendMessages(rest)
+            }
+        } else {
+            updateMessageContent(pendingAiId, 'AI 正在思考中...', 'pending')
+        }
         activeChatSession.value = data.session
         nextTick(scrollChatToBottom)
     } catch (error: any) {
         removeMessageById(localMessageId)
+        removeMessageById(pendingAiId)
         conversationInput.value = text
         const message =
             error?.msg || error?.message || '发送失败，请稍后重试'
@@ -1052,7 +1104,7 @@ const loadTodayStory = async () => {
     } catch (error: any) {
         if (error?.code === 404) {
             resetStoryState()
-            ElMessage.info('今日尚未生成短文，请点击“重新生成”')
+            ElMessage.info('今日尚未生成短文，请点击“再学一篇”')
         } else {
             console.error(error)
             ElMessage.error('获取今日短文失败，请稍后重试')
@@ -1392,12 +1444,35 @@ watch(
             border-radius: 14px;
             background: var(--el-fill-color-lighter);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            min-height: 38px;
         }
 
         .bubble-text {
             margin: 0;
             font-size: 14px;
             line-height: 1.7;
+        }
+
+        .bubble-loading {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            .dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--el-text-color-placeholder);
+                animation: bubble-pulse 0.9s infinite ease-in-out;
+
+                &:nth-child(2) {
+                    animation-delay: 0.2s;
+                }
+
+                &:nth-child(3) {
+                    animation-delay: 0.4s;
+                }
+            }
         }
 
         .conversation-section__footer {
@@ -1836,5 +1911,22 @@ watch(
 
 :global(body.word-story-no-footer .app-main) {
     padding-bottom: 0;
+}
+
+@keyframes bubble-pulse {
+    0% {
+        opacity: 0.2;
+        transform: scale(0.8);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0.2;
+        transform: scale(0.8);
+    }
 }
 </style>

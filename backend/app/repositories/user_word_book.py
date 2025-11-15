@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -82,6 +84,52 @@ async def list_words_for_day(
     )
     result = await session.execute(fallback_stmt)
     return [row[0] for row in result.fetchall() if row and row[0]]
+
+
+async def list_unlearned_word_entries(
+    session: AsyncSession,
+    user_word_book_id: int,
+    limit: int,
+) -> list[tuple[int, str]]:
+    stmt = (
+        select(UserWordBookWord.id, WordBookWord.word)
+        .join(
+            WordBookWord,
+            WordBookWord.id == UserWordBookWord.word_book_word_id,
+        )
+        .where(
+            UserWordBookWord.user_word_book_id == user_word_book_id,
+            UserWordBookWord.mastery_status == "unlearned",
+        )
+        .order_by(
+            UserWordBookWord.day_index.asc(),
+            UserWordBookWord.sequence_in_day.asc(),
+            UserWordBookWord.id.asc(),
+        )
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return [
+        (row[0], row[1])
+        for row in result.fetchall()
+        if row and row[0] and row[1]
+    ]
+
+
+async def mark_words_learned(
+    session: AsyncSession,
+    entry_ids: list[int],
+) -> None:
+    if not entry_ids:
+        return
+    stmt = select(UserWordBookWord).where(UserWordBookWord.id.in_(entry_ids))
+    result = await session.execute(stmt)
+    now = datetime.utcnow()
+    for record in result.scalars():
+        record.mastery_status = "learning"
+        record.study_count = (record.study_count or 0) + 1
+        record.last_studied_at = now
+    await session.flush()
 
 
 async def create_user_word_book(
