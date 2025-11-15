@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import case, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -159,3 +159,59 @@ async def create_user_word_book(
 async def delete_by_user(session: AsyncSession, user_id: int) -> None:
     await session.execute(delete(UserWordBook).where(UserWordBook.user_id == user_id))
     await session.flush()
+
+
+async def list_learning_words(
+    session: AsyncSession,
+    user_id: int,
+    limit: int,
+) -> list[tuple[int, str, str, int]]:
+    stmt = (
+        select(
+            UserWordBookWord.id,
+            WordBookWord.word,
+            UserWordBookWord.mastery_status,
+            UserWordBookWord.consecutive_known_hits,
+        )
+        .join(UserWordBook, UserWordBook.id == UserWordBookWord.user_word_book_id)
+        .join(WordBookWord, WordBookWord.id == UserWordBookWord.word_book_word_id)
+        .where(
+            UserWordBook.user_id == user_id,
+            UserWordBookWord.mastery_status == "learning",
+        )
+        .order_by(
+            case(
+                (UserWordBookWord.last_studied_at.is_(None), 0),
+                else_=1,
+            ).asc(),
+            UserWordBookWord.last_studied_at.asc(),
+            UserWordBookWord.id.asc(),
+        )
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return [
+        (row[0], row[1], row[2], row[3])
+        for row in result.fetchall()
+        if row and row[0] and row[1]
+    ]
+
+
+async def get_entry_by_id(
+    session: AsyncSession,
+    *,
+    entry_id: int,
+    user_id: int,
+) -> UserWordBookWord | None:
+    stmt = (
+        select(UserWordBookWord)
+        .options(selectinload(UserWordBookWord.word))
+        .join(UserWordBook, UserWordBook.id == UserWordBookWord.user_word_book_id)
+        .where(
+            UserWordBookWord.id == entry_id,
+            UserWordBook.user_id == user_id,
+        )
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()

@@ -231,6 +231,12 @@ class UserWordBookWord(Base):
     study_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, comment="学习次数"
     )
+    consecutive_known_hits: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="连续“我认识”次数",
+    )
     last_studied_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, comment="最后学习时间"
     )

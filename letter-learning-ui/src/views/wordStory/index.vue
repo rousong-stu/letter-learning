@@ -52,14 +52,6 @@
                         </el-tag>
                     </div>
 
-                    <el-alert
-                        title="短文基于今日词汇生成，后端打通后将实时获取 Coze 智能体返回内容。"
-                        type="success"
-                        :closable="false"
-                        class="story-hint"
-                        show-icon
-                    />
-
                     <div class="story-content-wrapper">
                         <div class="story-visual-fixed">
                             <div class="visual-frame" v-if="storyImageUrl">
@@ -188,7 +180,152 @@
                                     </div>
                                 </div>
                             </el-tab-pane>
-                            <el-tab-pane label="单词卡片" name="word">
+                            <el-tab-pane label="单词卡片" name="cards">
+                                <div class="review-pane">
+                                    <div class="review-header">
+                                        <div>
+                                            <h4>今日学习中的单词</h4>
+                                            <p class="review-subtitle">
+                                                快速回忆这些单词，判断是否掌握。
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-if="learningCardError"
+                                        class="review-placeholder"
+                                    >
+                                        <p>{{ learningCardError }}</p>
+                                        <el-button
+                                            type="primary"
+                                            size="small"
+                                            @click="loadLearningCards"
+                                        >
+                                            重试
+                                        </el-button>
+                                    </div>
+                                    <div
+                                        v-else-if="learningCardLoading"
+                                        class="review-placeholder"
+                                    >
+                                        <vab-remix-icon icon="loader-2-line" class="loading-icon" />
+                                        <p>正在准备单词卡片...</p>
+                                    </div>
+                                    <div
+                                        v-else-if="!currentLearningCard"
+                                        class="review-placeholder"
+                                    >
+                                        <vab-remix-icon
+                                            icon="sparkling-2-line"
+                                            class="placeholder-icon"
+                                        />
+                                        <p>暂无学习中的单词，完成学习计划后再来看看吧。</p>
+                                    </div>
+                                    <div v-else class="learning-card-board">
+                                        <div class="learning-word-main">
+                                            <h2 class="learning-word">
+                                                {{ currentLearningCard.word }}
+                                            </h2>
+                                        </div>
+                                        <div
+                                            v-if="learningCardViewMode === 'hint'"
+                                            class="learning-card-hint"
+                                        >
+                                            <h5>提示</h5>
+                                            <p>
+                                                {{
+                                                    currentLearningHintExample ||
+                                                    '暂无例句，试着直接回忆它的含义吧。'
+                                                }}
+                                            </p>
+                                        </div>
+                                        <div
+                                            v-if="learningCardViewMode === 'detail'"
+                                            class="learning-card-detail"
+                                        >
+                                            <div v-if="learningCardDictionaryLoading" class="review-placeholder">
+                                                <vab-remix-icon icon="loader-2-line" class="loading-icon" />
+                                                <p>正在查询词典...</p>
+                                            </div>
+                                            <template v-else-if="currentLearningDictionaryEntry">
+                                                <div class="detail-phonetics">
+                                                    <span
+                                                        v-for="item in currentLearningDictionaryEntry.phonetics || []"
+                                                        :key="item.notation"
+                                                    >
+                                                        {{ formatPhonetic(item.notation) }}
+                                                    </span>
+                                                </div>
+                                                <div class="detail-definitions">
+                                                    <div
+                                                        v-for="(definition, index) in currentLearningDictionaryEntry.definitions"
+                                                        :key="index"
+                                                        class="detail-definition"
+                                                    >
+                                                        <strong>释义 {{ index + 1 }}</strong>
+                                                        <p>{{ definition.meaning }}</p>
+                                                        <p v-if="definition.translation" class="definition-translation">
+                                                            {{ definition.translation }}
+                                                        </p>
+                                                        <ul v-if="definition.examples?.length">
+                                                            <li v-for="(example, idx) in definition.examples" :key="idx">
+                                                                {{ example }}
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <p v-else class="review-placeholder">
+                                                暂无词典详情。
+                                            </p>
+                                        </div>
+                                        <div class="learning-card-actions">
+                                            <el-button
+                                                type="success"
+                                                plain
+                                                :loading="learningCardActionLoading"
+                                                @click="handleLearningTooEasy"
+                                            >
+                                                太简单
+                                            </el-button>
+                                            <el-button
+                                                type="primary"
+                                                plain
+                                                :loading="learningCardActionLoading"
+                                                @click="handleLearningKnown"
+                                            >
+                                                我认识
+                                            </el-button>
+                                            <el-button
+                                                plain
+                                                @click="handleLearningHint"
+                                                :disabled="learningCardViewMode !== 'minimal'"
+                                            >
+                                                提示
+                                            </el-button>
+                                        </div>
+                                        <div class="learning-card-actions secondary">
+                                            <el-button @click="handleLearningReveal">
+                                                没想起来
+                                            </el-button>
+                                            <el-button @click="handleLearningReveal">
+                                                想起来了
+                                            </el-button>
+                                            <el-button @click="handleLearningReveal">
+                                                不认识
+                                            </el-button>
+                                        </div>
+                                        <el-button
+                                            v-if="learningCardViewMode === 'detail'"
+                                            type="primary"
+                                            class="next-card-btn"
+                                            @click="handleLearningNext"
+                                        >
+                                            下一个单词
+                                        </el-button>
+                                    </div>
+                                </div>
+                            </el-tab-pane>
+                            <el-tab-pane label="词典" name="word">
                                 <div class="word-pane">
                                     <div class="word-search">
                                         <el-input
@@ -422,6 +559,11 @@ import {
 } from '@/api/aiChat'
 import type { AiChatMessage, AiChatSession } from '@/api/aiChat'
 import { lookupDictionaryEntry, translateDefinition } from '@/api/dictionary'
+import {
+    fetchLearningWordCards,
+    applyWordCardAction,
+    type WordCardItem as LearningWordCard,
+} from '@/api/wordCards'
 import speakerIcon from '@/assets/speaker-icon.svg'
 import { useUserStore } from '@/store/modules/user'
 import { storeToRefs } from 'pinia'
@@ -440,6 +582,20 @@ type ConversationMessage = {
     text: string
     createdAt: string
     status?: 'pending' | 'done'
+}
+
+type DictionaryEntry = {
+    id: number
+    word: string
+    part_of_speech?: string
+    phonetics?: Array<{ notation: string; audio_url?: string }>
+    variants?: string[]
+    inflections?: string[]
+    definitions: Array<{
+        meaning: string
+        translation?: string
+        examples?: string[]
+    }>
 }
 
 const DEFAULT_WORDS: WordInfo[] = [
@@ -727,6 +883,14 @@ const lastStoryKeyUsed = ref('')
 const pendingAutoConversation = ref(false)
 const PAGE_LAYOUT_CLASS = 'word-story-no-footer'
 
+const learningWordCards = ref<LearningWordCard[]>([])
+const learningCardLoading = ref(false)
+const learningCardError = ref('')
+const learningCardActionLoading = ref(false)
+const learningCardDictionaryLoading = ref(false)
+const learningCardViewMode = ref<'minimal' | 'hint' | 'detail'>('minimal')
+const learningDictionaryCache = reactive<Record<string, DictionaryEntry>>({})
+
 const wordSearch = ref('abandon')
 const wordCardLoading = ref(false)
 const wordCardError = ref('')
@@ -812,6 +976,26 @@ const wordCardLabels = computed(() => {
     const general = wordCard.labels?.general || []
     const usage = wordCard.labels?.usage || []
     return [...general, ...usage]
+})
+
+const currentLearningCard = computed(() => learningWordCards.value[0] || null)
+const currentDictionaryKey = computed(() =>
+    currentLearningCard.value?.word?.toLowerCase() || ''
+)
+const currentLearningDictionaryEntry = computed<DictionaryEntry | null>(() => {
+    const key = currentDictionaryKey.value
+    if (!key) return null
+    return learningDictionaryCache[key] || null
+})
+const currentLearningHintExample = computed(() => {
+    const entry = currentLearningDictionaryEntry.value
+    if (!entry) return ''
+    for (const definition of entry.definitions || []) {
+        if (definition.examples && definition.examples.length) {
+            return definition.examples[0]
+        }
+    }
+    return ''
 })
 
 const formatPhonetic = (notation?: string) =>
@@ -986,6 +1170,122 @@ const requestAutoConversationStart = () => {
     }
 }
 
+const resetLearningCardState = () => {
+    learningCardViewMode.value = 'minimal'
+}
+
+const loadLearningCards = async () => {
+    learningCardLoading.value = true
+    learningCardError.value = ''
+    try {
+        const { data } = await fetchLearningWordCards(10)
+        learningWordCards.value = data.items || []
+        resetLearningCardState()
+    } catch (error: any) {
+        const message =
+            error?.msg || error?.message || '获取单词卡片失败，请稍后再试'
+        learningCardError.value = message
+        ElMessage.error(message)
+    } finally {
+        learningCardLoading.value = false
+    }
+}
+
+const ensureDictionaryEntry = async () => {
+    const word = currentDictionaryKey.value
+    if (!word) return null
+    if (learningDictionaryCache[word]) return learningDictionaryCache[word]
+    learningCardDictionaryLoading.value = true
+    try {
+        const { data } = await lookupDictionaryEntry(word)
+        learningDictionaryCache[word] = data
+        return data
+    } catch (error: any) {
+        const message =
+            error?.msg || error?.message || '获取词典信息失败，请稍后再试'
+        ElMessage.error(message)
+        return null
+    } finally {
+        learningCardDictionaryLoading.value = false
+    }
+}
+
+const submitLearningAction = async (
+    action: 'too_easy' | 'know' | 'review'
+) => {
+    const current = currentLearningCard.value
+    if (!current) return
+    learningCardActionLoading.value = true
+    try {
+        await applyWordCardAction(current.id, action)
+    } catch (error: any) {
+        const message =
+            error?.msg || error?.message || '操作失败，请稍后再试'
+        ElMessage.error(message)
+        throw error
+    } finally {
+        learningCardActionLoading.value = false
+    }
+}
+
+const moveToNextLearningCard = async () => {
+    if (learningWordCards.value.length) {
+        learningWordCards.value = learningWordCards.value.slice(1)
+    }
+    resetLearningCardState()
+    if (!learningWordCards.value.length && !learningCardLoading.value) {
+        await loadLearningCards()
+    }
+}
+
+const handleLearningTooEasy = async () => {
+    if (!currentLearningCard.value) return
+    try {
+        await submitLearningAction('too_easy')
+        await moveToNextLearningCard()
+    } catch {
+        // handled
+    }
+}
+
+const handleLearningKnown = async () => {
+    if (!currentLearningCard.value) return
+    try {
+        await submitLearningAction('know')
+        await moveToNextLearningCard()
+    } catch {
+        // handled
+    }
+}
+
+const handleLearningHint = async () => {
+    const entry = await ensureDictionaryEntry()
+    if (!entry) return
+    if (
+        !entry.definitions ||
+        !entry.definitions.length ||
+        !(entry.definitions[0].examples || []).length
+    ) {
+        ElMessage.info('暂无可用例句')
+    }
+    learningCardViewMode.value = 'hint'
+}
+
+const handleLearningReveal = async () => {
+    const entry = await ensureDictionaryEntry()
+    if (!entry) return
+    try {
+        await submitLearningAction('review')
+    } catch {
+        return
+    }
+    learningCardViewMode.value = 'detail'
+}
+
+const handleLearningNext = async () => {
+    await moveToNextLearningCard()
+}
+
 const handleConversationSend = async () => {
     const text = conversationInput.value.trim()
     if (!text) return
@@ -1136,6 +1436,17 @@ watch(
         definitionTranslationsVisible.value = {}
     },
     { deep: true }
+)
+
+watch(
+    () => activeSideTab.value,
+    (tab) => {
+        if (tab === 'cards' && !learningCardLoading.value) {
+            if (!learningWordCards.value.length) {
+                loadLearningCards()
+            }
+        }
+    }
 )
 </script>
 
@@ -1520,6 +1831,129 @@ watch(
         display: flex;
         flex-direction: column;
         gap: 16px;
+    }
+
+    .review-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            h4 {
+                margin: 0;
+            }
+
+            .review-subtitle {
+                margin: 4px 0 0;
+                font-size: 12px;
+                color: var(--el-text-color-secondary);
+            }
+        }
+    }
+
+    .learning-card-board {
+        border: 1px solid var(--el-border-color);
+        border-radius: 20px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: linear-gradient(135deg, #f0f7ff, #fdf7ff);
+    }
+
+    .learning-word-main {
+        text-align: center;
+
+        .learning-progress {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+        }
+
+        .learning-word {
+            margin: 8px 0 0;
+            font-size: 40px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+    }
+
+    .learning-card-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+
+        &.secondary {
+            margin-top: 4px;
+        }
+    }
+
+    .learning-card-hint,
+    .learning-card-detail {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+
+        h5 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: var(--el-color-primary);
+        }
+    }
+
+    .learning-card-detail {
+        .detail-phonetics {
+            display: flex;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .detail-definition {
+            margin-bottom: 12px;
+
+            strong {
+                font-size: 13px;
+            }
+
+            p {
+                margin: 4px 0;
+            }
+
+            ul {
+                margin: 4px 0 0 16px;
+                padding: 0;
+            }
+        }
+    }
+
+    .review-placeholder {
+        min-height: 120px;
+        border: 1px dashed var(--el-border-color);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 8px;
+        color: var(--el-text-color-secondary);
+
+        .placeholder-icon,
+        .loading-icon {
+            font-size: 28px;
+            color: var(--el-color-primary);
+        }
+    }
+
+    .next-card-btn {
+        align-self: center;
     }
 
     /* 上面是搜索框，下面整块是“可滚动内容区” */
