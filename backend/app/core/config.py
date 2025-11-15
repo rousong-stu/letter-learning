@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     coze_api_base: str = "https://api.coze.cn"
     coze_api_token: str | None = None
     coze_bot_id: str | None = None
+    coze_workflow_id: str | None = "7572622349360758824"
     coze_user_prefix: str = "ll-user"
+    coze_chat_bot_id: str | None = "7571082057812967487"
+    coze_chat_space_id: str | None = "7558388129191739455"
     coze_poll_interval_seconds: float = 1.2
     coze_poll_timeout_seconds: int = 90
     coze_request_timeout_seconds: int = 60

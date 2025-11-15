@@ -1,3 +1,4 @@
+from app.models.ai_chat import AiChatMessage, AiChatSession
 from app.models.auth import RefreshToken
 from app.models.base import Base
 from app.models.dictionary_entry import DictionaryEntry
@@ -7,6 +8,12 @@ from app.models.user import (
     UserProfile,
     UserPasswordHistory,
     UserLoginLog,
+)
+from app.models.word_book import (
+    UserWordBook,
+    UserWordBookWord,
+    WordBook,
+    WordBookWord,
 )
 from app.models.word_story import WordStory
 
@@ -20,4 +27,10 @@ __all__ = [
     "RefreshToken",
     "DictionaryEntry",
     "DictionaryDefinitionTranslation",
+    "WordBook",
+    "WordBookWord",
+    "UserWordBook",
+    "UserWordBookWord",
+    "AiChatSession",
+    "AiChatMessage",
 ]

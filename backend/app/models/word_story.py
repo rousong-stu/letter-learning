@@ -67,6 +67,12 @@ class WordStory(Base):
     model_name: Mapped[Optional[str]] = mapped_column(
         String(128), nullable=True, comment="模型/智能体"
     )
+    image_url: Mapped[str | None] = mapped_column(
+        String(1024), nullable=True, comment="生成的插图 URL"
+    )
+    image_caption: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="插图描述"
+    )
     status: Mapped[str] = mapped_column(
         String(32),
         nullable=False,

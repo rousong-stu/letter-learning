@@ -47,6 +47,8 @@ async def create_word_story(
     generated_at: datetime,
     story_tokens: int | None,
     model_name: str | None,
+    image_url: str | None,
+    image_caption: str | None,
     status: str,
     extra: dict | None,
 ) -> WordStory:
@@ -58,6 +60,8 @@ async def create_word_story(
         story_text=story_text,
         story_tokens=story_tokens,
         model_name=model_name,
+        image_url=image_url,
+        image_caption=image_caption,
         status=status,
         extra=extra,
     )
@@ -75,6 +79,8 @@ async def update_word_story(
     generated_at: datetime,
     story_tokens: int | None,
     model_name: str | None,
+    image_url: str | None,
+    image_caption: str | None,
     status: str,
     extra: dict | None,
 ) -> WordStory:
@@ -83,6 +89,8 @@ async def update_word_story(
     story.generated_at = generated_at
     story.story_tokens = story_tokens
     story.model_name = model_name
+    story.image_url = image_url
+    story.image_caption = image_caption
     story.status = status
     story.extra = extra
     await session.flush()

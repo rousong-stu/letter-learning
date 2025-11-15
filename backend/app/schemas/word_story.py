@@ -22,6 +22,8 @@ class WordStoryResponse(BaseModel):
     story_text: str
     story_tokens: int | None = None
     model_name: str | None = None
+    image_url: str | None = None
+    image_caption: str | None = None
 
 
 class WordStoryListResponse(BaseModel):

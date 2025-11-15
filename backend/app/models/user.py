@@ -113,6 +113,12 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="noload",
     )
+    ai_chat_sessions: Mapped[List["AiChatSession"]] = relationship(
+        "AiChatSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="noload",
+    )
 
     def __repr__(self) -> str:
         return f"<User username={self.username!r}>"
