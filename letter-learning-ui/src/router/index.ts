@@ -194,6 +194,48 @@ export const asyncRoutes: VabRouteRecord[] = [
         ],
     },
     {
+        path: '/word-books',
+        name: 'WordBookRoot',
+        component: Layout,
+        meta: {
+            title: '单词书管理',
+            icon: 'book-2-line',
+            guard: ['Admin'],
+        },
+        children: [
+            {
+                path: 'upload',
+                name: 'WordBookUpload',
+                component: () => import('@/views/wordBooks/upload.vue'),
+                meta: {
+                    title: '上传单词书',
+                    icon: 'upload-2-line',
+                    guard: ['Admin'],
+                },
+            },
+        ],
+    },
+    {
+        path: '/learning-plan',
+        name: 'LearningPlanRoot',
+        component: Layout,
+        meta: {
+            title: '学习设置',
+            icon: 'task-line',
+        },
+        children: [
+            {
+                path: 'user-plan',
+                name: 'UserWordBookPlan',
+                component: () => import('@/views/wordBooks/userPlan.vue'),
+                meta: {
+                    title: '用户学习设置',
+                    icon: 'task-line',
+                },
+            },
+        ],
+    },
+    {
         path: '/vab',
         name: 'Vab',
         component: Layout,

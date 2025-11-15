@@ -11,7 +11,11 @@ import { getList } from '@/api/router'
 import type { VabRouteRecord } from '/#/router'
 import type { RouteRecordName } from 'vue-router'
 
-const MENU_ALLOW_LIST = new Set<RouteRecordName | string>(['WordStoryRoot'])
+const MENU_ALLOW_LIST = new Set<RouteRecordName | string>([
+    'WordStoryRoot',
+    'WordBookRoot',
+    'LearningPlanRoot',
+])
 
 function filterMenuByAllowList(
     routes: VabRouteRecord[]

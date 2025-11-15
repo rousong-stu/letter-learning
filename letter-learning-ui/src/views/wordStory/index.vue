@@ -180,6 +180,14 @@
                                         </el-button>
                                     </div>
                                     <div class="word-card__body">
+                                        <el-alert
+                                            v-if="wordCardError"
+                                            :title="wordCardError"
+                                            type="error"
+                                            :closable="false"
+                                            show-icon
+                                            class="word-card__alert"
+                                        />
                                         <el-scrollbar class="word-scroll" always>
                                             <div class="word-header">
                                                 <div>
@@ -280,7 +288,8 @@
                                                             text
                                                             size="small"
                                                             class="translation-trigger"
-                                                            @click="toggleDefinitionTranslation(index)"
+                                                            :loading="isDefinitionTranslationLoading(index)"
+                                                            @click="handleDefinitionTranslation(index)"
                                                         >
                                                             中文释义
                                                         </el-button>
@@ -368,6 +377,7 @@ import {
     generateWordStory,
     type WordStoryRecord,
 } from '@/api/wordStory'
+import { lookupDictionaryEntry, translateDefinition } from '@/api/dictionary'
 import speakerIcon from '@/assets/speaker-icon.svg'
 
 type WordInfo = {
@@ -601,7 +611,10 @@ const definitionTranslationsVisible = ref<Record<number, boolean>>({})
 
 const wordSearch = ref('abandon')
 const wordCardLoading = ref(false)
+const wordCardError = ref('')
+const definitionTranslationLoading = ref<Record<number, boolean>>({})
 const wordCard = reactive({
+    id: 0,
     word: 'Abandon',
     part_of_speech: 'verb',
     phonetics: [
@@ -638,7 +651,9 @@ const wordCard = reactive({
     labels: {
         general: ['often passive'],
         usage: ['formal'],
+        parenthetical: [],
     },
+    etymology: '',
 })
 
 const aiReplyTemplates = [
@@ -735,36 +750,100 @@ const handleRegenerate = () => {
         })
 }
 
-const handleWordSearch = () => {
-    if (!wordSearch.value.trim()) {
+const applyWordCardPayload = (payload: any, fallbackWord: string) => {
+    const labels = payload?.labels || {}
+    wordCard.id = payload?.id ?? 0
+    wordCard.word = payload?.word || fallbackWord
+    wordCard.part_of_speech = payload?.part_of_speech || ''
+    wordCard.phonetics = payload?.phonetics ?? []
+    wordCard.variants = payload?.variants ?? []
+    wordCard.inflections = payload?.inflections ?? []
+    wordCard.definitions = (payload?.definitions ?? []).map((item: any) => ({
+        meaning: item?.meaning || '',
+        examples: Array.isArray(item?.examples) ? item.examples : [],
+        translation: item?.translation || '',
+    }))
+    wordCard.synonyms = payload?.synonyms ?? []
+    wordCard.antonyms = payload?.antonyms ?? []
+    wordCard.labels = {
+        general: labels.general ?? [],
+        usage: labels.usage ?? [],
+        parenthetical: labels.parenthetical ?? [],
+    }
+    wordCard.etymology = payload?.etymology ?? ''
+    definitionTranslationsVisible.value = {}
+    definitionTranslationLoading.value = {}
+}
+
+const handleWordSearch = async () => {
+    const query = wordSearch.value.trim()
+    if (!query) {
         ElMessage.warning('请输入英文单词')
         return
     }
     wordCardLoading.value = true
-    window.setTimeout(() => {
-        wordCard.word = wordSearch.value.trim()
-        wordCard.part_of_speech = 'verb'
-        wordCard.definitions = [
-            {
-                meaning: `示例释义：${wordCard.word} 的 Merriam-Webster 解释`,
-                translation: `${wordCard.word} 的中文释义示例`,
-                examples: ['此处将在接入后端后展示真实例句。'],
-            },
-        ]
-        wordCard.synonyms = ['synonym']
-        wordCard.antonyms = []
+    wordCardError.value = ''
+    try {
+        const { data } = await lookupDictionaryEntry(query)
+        applyWordCardPayload(data, query)
+        ElMessage.success(`已获取 ${data.word || query} 的最新词典信息`)
+    } catch (error: any) {
+        const message =
+            error?.msg ||
+            error?.message ||
+            '查询词典失败，请稍后重试'
+        wordCardError.value = message
+        ElMessage.error(message)
+    } finally {
         wordCardLoading.value = false
-        ElMessage.info('界面预览，等待后端接入 Merriam-Webster API')
-    }, 600)
-}
-
-const toggleDefinitionTranslation = (index: number) => {
-    const current = definitionTranslationsVisible.value[index] ?? false
-    definitionTranslationsVisible.value = {
-        ...definitionTranslationsVisible.value,
-        [index]: !current,
     }
 }
+
+const setDefinitionTranslationLoading = (index: number, value: boolean) => {
+    definitionTranslationLoading.value = {
+        ...definitionTranslationLoading.value,
+        [index]: value,
+    }
+}
+
+const handleDefinitionTranslation = async (index: number) => {
+    const definition = wordCard.definitions[index]
+    if (!definition) return
+    const isVisible = definitionTranslationsVisible.value[index]
+    if (isVisible) {
+        definitionTranslationsVisible.value = {
+            ...definitionTranslationsVisible.value,
+            [index]: false,
+        }
+        return
+    }
+    if (!definition.translation) {
+        if (!wordCard.id) {
+            ElMessage.warning('请先查询单词')
+            return
+        }
+        setDefinitionTranslationLoading(index, true)
+        try {
+            const { data } = await translateDefinition(wordCard.id, index)
+            definition.translation = data.translation
+            ElMessage.success('中文释义已生成')
+        } catch (error: any) {
+            const message =
+                error?.msg || error?.message || '生成中文释义失败'
+            ElMessage.error(message)
+            return
+        } finally {
+            setDefinitionTranslationLoading(index, false)
+        }
+    }
+    definitionTranslationsVisible.value = {
+        ...definitionTranslationsVisible.value,
+        [index]: true,
+    }
+}
+
+const isDefinitionTranslationLoading = (index: number) =>
+    !!definitionTranslationLoading.value[index]
 
 const playWordAudio = (url?: string) => {
     if (!url) {
@@ -1150,6 +1229,10 @@ watch(
         display: flex;
         flex-direction: column;
         gap: 16px;
+
+        .word-card__alert {
+            margin-bottom: 4px;
+        }
     }
 
     /* ⭐ 关键：把真正滚动的容器高度“锁死”，超出的就滚动 */
