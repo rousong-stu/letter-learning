@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.dependencies import get_current_user, get_token_credentials
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import decode_token
 from app.models import User
 from app.repositories import token as token_repo
@@ -36,18 +37,28 @@ def _should_auto_generate_story(last_login_at: datetime | None) -> bool:
         return True
 
 
-async def _auto_generate_story(session: AsyncSession, user: User) -> None:
-    try:
-        await word_story_service.generate_story(
-            session,
-            user,
-            story_date=date.today(),
-            force=True,
-        )
-    except WordStoryGenerationError as exc:
-        logger.warning("Auto regenerate story failed: %s", exc)
-    except Exception:
-        logger.exception("Unexpected error when auto regenerating story")
+async def _auto_generate_story(
+    user_id: int, session_factory: async_sessionmaker[AsyncSession] | None = None
+) -> None:
+    factory = session_factory or AsyncSessionLocal
+    async with factory() as session:
+        user = await session.get(User, user_id)
+        if not user:
+            return
+        try:
+            await word_story_service.generate_story(
+                session,
+                user,
+                story_date=date.today(),
+                force=True,
+            )
+            await session.commit()
+        except WordStoryGenerationError as exc:
+            await session.rollback()
+            logger.warning("Auto regenerate story failed: %s", exc)
+        except Exception:
+            await session.rollback()
+            logger.exception("Unexpected error when auto regenerating story")
 
 
 @router.post("/login")
@@ -86,12 +97,24 @@ async def login(
             user_agent=user_agent,
             token_id=refresh_token_record.token,
         )
-        if should_auto_generate:
-            await _auto_generate_story(session, user)
         await session.commit()
     except Exception:
         await session.rollback()
         raise
+
+    if should_auto_generate:
+        bind = session.bind
+        session_factory = (
+            async_sessionmaker(bind, expire_on_commit=False, class_=AsyncSession)
+            if bind is not None
+            else AsyncSessionLocal
+        )
+        asyncio.create_task(
+            _auto_generate_story(
+                user.id,
+                session_factory,
+            )
+        )
 
     return success_response(TokenData(token=token).model_dump(), msg="登录成功")
 
