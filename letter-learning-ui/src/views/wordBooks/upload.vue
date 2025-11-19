@@ -198,9 +198,6 @@ const submitting = ref(false)
 const coverFile = ref<File | null>(null)
 const wordListFile = ref<File | null>(null)
 const userStore = useUserStore()
-const isAdminUser = computed(
-    () => userStore.getUsername?.toLowerCase?.() === 'admin'
-)
 
 const formRules = {
     title: [
@@ -229,10 +226,6 @@ const resetForm = () => {
 }
 
 const handleSubmit = () => {
-    if (!isAdminUser.value) {
-        ElMessage.error('仅管理员可上传单词书，请联系管理员')
-        return
-    }
     formRef.value?.validate(async (valid) => {
         if (!valid) return
         if (!wordListFile.value) {

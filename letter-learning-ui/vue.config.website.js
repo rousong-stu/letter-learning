@@ -56,14 +56,12 @@ module.exports = defineConfig({
             target: [`http://localhost:${devPort}`],
         },
         port: devPort,
-        setupMiddlewares: require('./mock'),
         // 注释掉的地方是前端配置代理访问后端的示例，如无特别需求，不建议使用！！！
         // baseURL必须为/xxx，而不是后端服务器，请先了解代理逻辑，再设置前端代理
         // ！！！一定要注意！！！
         // 1、这里配置了跨域及代理只针对开发环境生效
         // 2、不建议你在前端配置跨域，建议你后端配置Allow-Origin,Method,Headers，放行token字段，一步到位
         // 3、后端配置了跨域，就不需要前端再配置，会发生Origin冲突
-        // 4、webpack5版本前端配置代理无法与mock同时使用，如果一定要用前端代理，需注释setupMiddlewares: require('./mock')
         // proxy: {
         //   [baseURL]: {
         //     target: `https://xxx.com`,
@@ -74,21 +72,6 @@ module.exports = defineConfig({
         //     },
         //   },
         // },
-    },
-    pwa: {
-        workboxOptions: {
-            skipWaiting: true,
-            clientsClaim: true,
-        },
-        themeColor: '#ffffff',
-        msTileColor: '#ffffff',
-        appleMobileWebAppCapable: 'yes',
-        appleMobileWebAppStatusBarStyle: 'black',
-        manifestOptions: {
-            name: 'Vue Admin Better - Admin Plus',
-            short_name: 'Admin Plus',
-            background_color: '#ffffff',
-        },
     },
     configureWebpack() {
         return {

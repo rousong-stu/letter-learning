@@ -9,6 +9,7 @@ import re
 from typing import Any, Iterable, Optional
 
 import httpx
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -64,6 +65,32 @@ class WorkflowInputs:
 
 class WordStoryGenerationError(RuntimeError):
     pass
+
+
+def _compose_extra(
+    base_extra: dict[str, Any],
+    generation_count: int,
+    chat_meta: dict[str, Optional[str]],
+    usage: dict[str, Any],
+    image_caption: str,
+    image_urls: list[str],
+    workflow_inputs: WorkflowInputs,
+) -> dict[str, Any]:
+    return {
+        **base_extra,
+        "chat_id": chat_meta.get("chat_id"),
+        "conversation_id": chat_meta.get("conversation_id"),
+        "usage": usage,
+        "image_caption": image_caption,
+        "image_urls": image_urls,
+        "workflow_params": {
+            "user_class": workflow_inputs.user_class,
+            "english_level": workflow_inputs.english_level,
+            "target_word_num": workflow_inputs.target_word_num,
+            "day_index": workflow_inputs.day_index,
+        },
+        "generation_count": generation_count,
+    }
 
 
 def _normalize_words(words: Iterable[str]) -> list[str]:
@@ -429,21 +456,15 @@ async def generate_story(
     )
     primary_image_url = image_urls[0] if image_urls else None
 
-    extra = {
-        **existing_extra,
-        "chat_id": chat_meta.get("chat_id"),
-        "conversation_id": chat_meta.get("conversation_id"),
-        "usage": usage,
-        "image_caption": image_caption,
-        "image_urls": image_urls,
-        "workflow_params": {
-            "user_class": workflow_inputs.user_class,
-            "english_level": workflow_inputs.english_level,
-            "target_word_num": workflow_inputs.target_word_num,
-            "day_index": workflow_inputs.day_index,
-        },
-        "generation_count": next_generation_count,
-    }
+    extra = _compose_extra(
+        existing_extra,
+        next_generation_count,
+        chat_meta,
+        usage,
+        image_caption,
+        image_urls,
+        workflow_inputs,
+    )
 
     if existing:
         return await word_story_repo.update_word_story(
@@ -460,20 +481,56 @@ async def generate_story(
             extra=extra,
         )
 
-    return await word_story_repo.create_word_story(
-        session,
-        user_id=user.id,
-        story_date=story_date,
-        words=workflow_inputs.words,
-        story_text=story_text,
-        generated_at=generated_at,
-        story_tokens=story_tokens,
-        model_name=model_name,
-        image_url=primary_image_url,
-        image_caption=image_caption,
-        status="success",
-        extra=extra,
-    )
+    try:
+        return await word_story_repo.create_word_story(
+            session,
+            user_id=user.id,
+            story_date=story_date,
+            words=workflow_inputs.words,
+            story_text=story_text,
+            generated_at=generated_at,
+            story_tokens=story_tokens,
+            model_name=model_name,
+            image_url=primary_image_url,
+            image_caption=image_caption,
+            status="success",
+            extra=extra,
+        )
+    except IntegrityError as exc:
+        await session.rollback()
+        dup = await word_story_repo.get_by_user_and_date(session, user.id, story_date)
+        if not dup:
+            raise WordStoryGenerationError("生成短文失败，请稍后重试") from exc
+        if not force:
+            return dup
+        dup_extra = dup.extra.copy() if isinstance(dup.extra, dict) else {}
+        dup_count = int(dup_extra.get("generation_count") or 0)
+        if dup_count >= MAX_DAILY_GENERATIONS:
+            raise WordStoryGenerationError(
+                "您今天已经连续学习了两篇文章了，学习需要循序渐进，休息一下，明天再学习吧！"
+            ) from exc
+        merged_extra = _compose_extra(
+            dup_extra,
+            dup_count + 1,
+            chat_meta,
+            usage,
+            image_caption,
+            image_urls,
+            workflow_inputs,
+        )
+        return await word_story_repo.update_word_story(
+            session,
+            dup,
+            words=workflow_inputs.words,
+            story_text=story_text,
+            generated_at=generated_at,
+            story_tokens=story_tokens,
+            model_name=model_name,
+            image_url=primary_image_url,
+            image_caption=image_caption,
+            status="success",
+            extra=merged_extra,
+        )
 
 
 async def get_story_by_date(

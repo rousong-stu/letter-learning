@@ -56,25 +56,6 @@ module.exports = defineConfig({
         },
         hot: true,
         port: devPort,
-        setupMiddlewares:
-            process.env.NODE_ENV === 'development'
-                ? require('./mock')
-                : undefined,
-    },
-    pwa: {
-        workboxOptions: {
-            skipWaiting: true,
-            clientsClaim: true,
-        },
-        themeColor: '#ffffff',
-        msTileColor: '#ffffff',
-        appleMobileWebAppCapable: 'yes',
-        appleMobileWebAppStatusBarStyle: 'black',
-        manifestOptions: {
-            name: 'Vue Admin Better - Admin Plus',
-            short_name: 'Admin Plus',
-            background_color: '#ffffff',
-        },
     },
     configureWebpack() {
         return {

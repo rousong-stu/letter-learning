@@ -24,9 +24,6 @@ export async function encryptedData(data: any) {
     let publicKey
     const res = await getPublicKey()
     publicKey = res.data.publicKey
-    if (res.data.mockServer) {
-        publicKey = ''
-    }
     if (publicKey === '') {
         return data
     }

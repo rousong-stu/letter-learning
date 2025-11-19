@@ -1,6 +1,5 @@
 <script lang="ts" setup>
     import { useHead } from '@vueuse/head'
-    import { pwa } from '@/config'
     import { enLocale, zhLocale } from '@/i18n'
 
     const route = useRoute()
@@ -8,10 +7,6 @@
 
     const locale = computed(() =>
         language.value === 'en' ? enLocale : zhLocale
-    )
-
-    const VabUpdate = defineAsyncComponent(
-        () => import('@/plugins/VabUpdate/index.vue')
     )
 
     const siteData = reactive({
@@ -40,6 +35,5 @@
         <router-view v-slot="{ Component }">
             <component :is="Component" />
         </router-view>
-        <vab-update v-if="pwa" ref="vabUpdateRef" />
     </el-config-provider>
 </template>

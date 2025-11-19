@@ -24,8 +24,8 @@ module.exports = {
     buildGzip: false,
     // npm run build时是否开启图片压缩，由于国内网路原因image-webpack-loader必须使用cnpm安装，如无法使用cnpm，请配置false
     imageCompression: false,
-    // pwa
-    pwa: true,
+    // 是否启用 PWA（service worker）
+    pwa: false,
     // 打包优化，如需实现服务器快速部署请配置false，如需提升网页加载速度请配置true
     buildOptimize: true,
     // 禁止在生产环境下使用调试
