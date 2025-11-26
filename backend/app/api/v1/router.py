@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     word_book,
     word_card,
     word_story,
+    dashboard,
 )
 
 router = APIRouter()
@@ -26,3 +27,4 @@ router.include_router(word_book.router, tags=["单词书"])
 router.include_router(user_word_book.router, tags=["用户单词书"])
 router.include_router(ai_chat.router, tags=["AI 对话"])
 router.include_router(word_card.router, tags=["单词卡片"])
+router.include_router(dashboard.router, tags=["仪表盘"])
