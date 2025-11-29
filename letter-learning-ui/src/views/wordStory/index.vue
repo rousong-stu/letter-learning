@@ -34,7 +34,6 @@
                         <div class="story-card__header">
                             <div>
                                 <div class="headline">
-                                    <span class="eyebrow">AI 生成短文</span>
                                     <strong>今日词包记忆任务</strong>
                                 </div>
                                 <div class="subtitle">
@@ -62,7 +61,8 @@
                             :key="word.word"
                             size="small"
                             effect="plain"
-                            class="word-tag"
+                            class="word-tag clickable-word"
+                            @click="handleWordClick(word.word)"
                         >
                             {{ word.word }}
                         </el-tag>
@@ -98,7 +98,17 @@
                                         v-for="(paragraph, index) in storyParagraphs"
                                         :key="`paragraph-${index}`"
                                     >
-                                        {{ paragraph }}
+                                        <span
+                                            v-for="(token, idx) in splitParagraph(paragraph)"
+                                            :key="`word-${index}-${idx}`"
+                                            :class="[
+                                                'story-word-token',
+                                                token.isWord && 'clickable-word',
+                                            ]"
+                                            @click="token.isWord && handleWordClick(token.clean)"
+                                        >
+                                            {{ token.text }}
+                                        </span>
                                     </p>
                                 </transition-group>
                             </div>
@@ -127,7 +137,10 @@
                                     {{ tab.props.label }}
                                 </span>
                             </template>
-                            <el-tab-pane label="AI 对话" name="conversation">
+                            <el-tab-pane name="conversation">
+                                <template #label>
+                                    <span class="lumilyx-tab-label">Lumilyx</span>
+                                </template>
                                 <div class="conversation-section">
                                     <div class="conversation-section__header">
                                         <el-button
@@ -1037,8 +1050,36 @@ const displayDate = new Intl.DateTimeFormat('zh-CN', {
     weekday: 'long',
 }).format(new Date())
 
+const splitParagraph = (paragraph: string) => {
+    const tokens: Array<{ text: string; isWord: boolean; clean: string }> = []
+    const regex = /([A-Za-z][A-Za-z'-]*)|([^A-Za-z]+)/g
+    let match
+    while ((match = regex.exec(paragraph)) !== null) {
+        if (match[1]) {
+            const clean = match[1].replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '')
+            tokens.push({
+                text: match[1],
+                isWord: true,
+                clean: clean.toLowerCase(),
+            })
+        } else if (match[2]) {
+            tokens.push({ text: match[2], isWord: false, clean: '' })
+        }
+    }
+    return tokens
+}
+
 const scrollChatToBottom = () => {
     chatScrollbarRef.value?.setScrollTop?.(9999)
+}
+
+const handleWordClick = async (word: string) => {
+    if (!word) return
+    const cleaned = word.trim()
+    if (!cleaned) return
+    activeSideTab.value = 'word' // 切换到词典面板
+    wordSearch.value = cleaned
+    await handleWordSearch() // 复用原有查询逻辑
 }
 
 const handleRegenerate = (allowExceed: boolean | Event = false) => {
@@ -1582,8 +1623,13 @@ watch(
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            align-items: center;
+            align-items: flex-start;
             font-size: 13px;
+            max-height: 96px;
+            overflow: auto;
+            padding-right: 8px;
+            padding-top: 6px;
+            padding-bottom: 6px;
 
             .meta-label {
                 color: var(--el-text-color-regular);
@@ -1664,6 +1710,18 @@ watch(
 
                     p {
                         margin-bottom: 16px;
+                    }
+
+                    .story-word-token {
+                        display: inline;
+                    }
+                    .story-word-token.clickable-word {
+                        cursor: pointer;
+                        transition: color 0.15s ease, text-decoration 0.15s ease;
+                    }
+                    .story-word-token.clickable-word:hover {
+                        color: var(--el-color-primary);
+                        text-decoration: underline;
                     }
                 }
             }
@@ -1890,6 +1948,18 @@ watch(
         :deep(.el-tabs__header) {
             margin-bottom: 12px;
         }
+        :deep(.el-tabs__item) {
+            font-size: 15px;
+            font-weight: 600;
+            padding: 0 16px;
+        }
+        .lumilyx-tab-label {
+            font-family: 'Caveat', 'Comic Sans MS', 'Pacifico', cursive;
+            font-size: 16px;
+            font-weight: 400;
+            color: #9fa8da;
+            letter-spacing: 0.3px;
+        }
     }
 
     .start-conversation-btn {
@@ -1907,11 +1977,13 @@ watch(
 
     /* ⭐ 单词卡片区域相关 */
 
-    /* 单词卡片区域整体还是占满卡片高度 */
+    /* 单词卡片区域整体还是占满卡片高度，允许内部滚动 */
     .word-pane {
         display: flex;
         flex-direction: column;
         gap: 16px;
+        max-height: 100%;
+        overflow: hidden;
     }
 
     .review-pane {
@@ -1944,6 +2016,8 @@ watch(
         flex-direction: column;
         gap: 16px;
         background: linear-gradient(135deg, #f0f7ff, #fdf7ff);
+        max-height: 360px;
+        overflow: auto;
     }
 
     .learning-word-main {

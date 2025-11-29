@@ -23,7 +23,7 @@
             @keyup.enter.stop
         >
             <div class="title">欢迎回来，学友！</div>
-            <div class="title-tips">
+            <div class="title-tips elegant">
                 A journey of a thousand miles begins with a single word！
             </div>
             <el-form-item prop="username">
@@ -322,6 +322,14 @@
             margin-bottom: 18px;
             font-size: 16px;
             color: #5f6f85;
+            &.elegant {
+                font-family: 'Caveat', 'Comic Sans MS', 'Pacifico', cursive;
+                font-size: 18px;
+                font-weight: 400;
+                font-style: normal;
+                color: #9fa8da;
+                letter-spacing: 0.2px;
+            }
         }
 
         .login-btn {

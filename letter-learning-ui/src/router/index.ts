@@ -187,7 +187,7 @@ export const asyncRoutes: VabRouteRecord[] = [
         name: 'WordStoryRoot',
         component: Layout,
         meta: {
-            title: 'AI 词汇短文',
+            title: '开始学习',
             icon: 'book-open-line',
         },
         children: [
@@ -196,31 +196,9 @@ export const asyncRoutes: VabRouteRecord[] = [
                 name: 'WordStory',
                 component: () => import('@/views/wordStory/index.vue'),
                 meta: {
-                    title: 'AI 词汇短文',
+                    title: 'Lumilyx短文伴学',
                     icon: 'book-open-line',
-                    noClosable: true,
-                },
-            },
-        ],
-    },
-    {
-        path: '/word-books',
-        name: 'WordBookRoot',
-        component: Layout,
-        meta: {
-            title: '单词书管理',
-            icon: 'book-2-line',
-            guard: ['Admin'],
-        },
-        children: [
-            {
-                path: 'upload',
-                name: 'WordBookUpload',
-                component: () => import('@/views/wordBooks/upload.vue'),
-                meta: {
-                    title: '上传单词书',
-                    icon: 'upload-2-line',
-                    guard: ['Admin'],
+                    noClosable: false,
                 },
             },
         ],
@@ -241,6 +219,16 @@ export const asyncRoutes: VabRouteRecord[] = [
                 meta: {
                     title: '用户学习设置',
                     icon: 'task-line',
+                },
+            },
+            {
+                path: 'upload',
+                name: 'WordBookUpload',
+                component: () => import('@/views/wordBooks/upload.vue'),
+                meta: {
+                    title: '上传单词书',
+                    icon: 'upload-2-line',
+                    guard: ['Admin'],
                 },
             },
         ],
