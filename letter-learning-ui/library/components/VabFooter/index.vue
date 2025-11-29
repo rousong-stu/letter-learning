@@ -1,27 +1,17 @@
-<script lang="ts" setup>
-    import { useSettingsStore } from '@/store/modules/settings'
-
-    const fullYear = new Date().getFullYear()
-    const settingsStore = useSettingsStore()
-    const { title } = storeToRefs(settingsStore)
-
-    // 国家法律法规要求显示备案号 实际项目请自行修改为自己的备案信息及域名
-    // const beianShow = ref(false)
-</script>
-
 <template>
     <footer class="vab-footer">
-        Copyright
-        <vab-icon icon="copyright-line" />
-        {{ fullYear }} {{ title }}
-        <!-- <a
-      v-if="beianShow"
-      class="beian"
-      href="https://beian.miit.gov.cn/#/Integrated/index"
-      target="_blank"
-    >
-      鲁ICP备2021002317号-1
-    </a> -->
+        <span>Copyright ©2025 </span>
+        <a href="https://www.lumilyx.cn" target="_blank" rel="noopener">www.lumilyx.cn</a>
+        <span> | </span>
+        <a
+            class="icp-link"
+            href="https://beian.miit.gov.cn"
+            target="_blank"
+            rel="noopener"
+        >
+            蜀ICP备2025152100号-2
+        </a>
+        <span> | 四川大成迅龙数据科技有限公司 版权所有</span>
     </footer>
 </template>
 
@@ -36,12 +26,18 @@
         background: var(--el-color-white);
         border-top: 1px dashed #{$base-border-color};
 
-        i {
-            margin: 0 5px;
+        a {
+            color: rgba(0, 0, 0, 0.45);
+            text-decoration: none;
         }
-        .beian {
-            margin-left: 5px;
-            user-select: none;
+
+        a:hover {
+            color: var(--el-color-primary);
+            text-decoration: underline;
+        }
+
+        .icp-link {
+            margin: 0 4px;
         }
     }
 </style>

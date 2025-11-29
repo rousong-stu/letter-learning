@@ -106,6 +106,22 @@
                 </router-link>
             </el-form-item>
         </el-form>
+        <div class="global-footer">
+            <span>Copyright ©2025 </span>
+            <a href="https://www.lumilyx.cn" target="_blank" rel="noopener"
+                >www.lumilyx.cn</a
+            >
+            <span> | </span>
+            <a
+                class="icp-link"
+                href="https://beian.miit.gov.cn"
+                target="_blank"
+                rel="noopener"
+            >
+                蜀ICP备2025152100号-2
+            </a>
+            <span> | 四川大成迅龙数据科技有限公司 版权所有</span>
+        </div>
     </div>
 </template>
 
@@ -296,6 +312,33 @@
             background: url('~@/assets/login_images/home_bg_final.jpg')
                 center center / cover no-repeat;
             z-index: 0;
+        }
+    }
+
+    .global-footer {
+        position: fixed;
+        left: 0;
+        bottom: 12px;
+        width: 100%;
+        text-align: center;
+        font-size: 12px;
+        color: #7a8091;
+        line-height: 1.6;
+        padding: 0 12px;
+        z-index: 2;
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: var(--el-color-primary);
+            text-decoration: underline;
+        }
+
+        .icp-link {
+            margin: 0 4px;
         }
     }
 
