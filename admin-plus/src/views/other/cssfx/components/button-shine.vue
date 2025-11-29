@@ -1,0 +1,35 @@
+<template>
+    <button>Shine</button>
+</template>
+
+<style scoped>
+    button {
+        position: relative;
+        z-index: 1;
+        padding: 0.5em 1em;
+        overflow: hidden;
+        font-family: inherit;
+        font-size: inherit;
+        color: white;
+        cursor: pointer;
+        outline: none;
+        background-color: hsl(236deg 32% 26%);
+        border: none;
+    }
+
+    button::after {
+        position: absolute;
+        top: -50%;
+        bottom: -50%;
+        z-index: -1;
+        width: 1.25em;
+        content: '';
+        background-color: hsl(0deg 0% 100% / 20%);
+        transform: translate3d(-525%, 0, 0) rotate(35deg);
+    }
+
+    button:hover::after {
+        transform: translate3d(200%, 0, 0) rotate(35deg);
+        transition: transform 0.45s ease-in-out;
+    }
+</style>

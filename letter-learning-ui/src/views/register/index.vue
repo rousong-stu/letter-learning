@@ -1,43 +1,39 @@
 <template>
-    <div class="register-container">
-        <el-row>
-            <el-col :lg="14" :md="11" :sm="24" :xl="14" :xs="24">
-                <div style="color: transparent">占位符</div>
-            </el-col>
-            <el-col :lg="9" :md="12" :sm="24" :xl="9" :xs="24">
-                <el-form
-                    ref="registerFormRef"
-                    class="register-form"
-                    :model="form"
-                    :rules="registerRules"
+    <div class="auth-page">
+        <el-form
+            ref="registerFormRef"
+            class="auth-form"
+            :model="form"
+            :rules="registerRules"
+        >
+            <div class="title">创建账户</div>
+            <div class="title-tips">{{ translateTitle('注册加入') }} {{ platformTitle }}</div>
+
+            <el-form-item prop="username">
+                <el-input
+                    v-model.trim="form.username"
+                    v-focus
+                    auto-complete="off"
+                    :placeholder="translateTitle('请输入用户名')"
+                    type="text"
                 >
-                    <div class="title">hello !</div>
-                    <div class="title-tips">{{ translateTitle('注册') }}</div>
-                    <el-form-item prop="username">
-                        <el-input
-                            v-model.trim="form.username"
-                            v-focus
-                            auto-complete="off"
-                            :placeholder="translateTitle('请输入用户名')"
-                            type="text"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="user-line" />
-                            </template>
-                        </el-input>
-                    </el-form-item>
-                    <el-form-item prop="password">
-                        <el-input
-                            v-model.trim="form.password"
-                            autocomplete="new-password"
-                            :placeholder="translateTitle('请输入密码')"
-                            type="password"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="lock-line" />
-                            </template>
-                        </el-input>
-                    </el-form-item>
+                    <template #prefix>
+                        <vab-icon icon="user-line" />
+                    </template>
+                </el-input>
+            </el-form-item>
+            <el-form-item prop="password">
+                <el-input
+                    v-model.trim="form.password"
+                    autocomplete="new-password"
+                    :placeholder="translateTitle('请输入密码')"
+                    type="password"
+                >
+                    <template #prefix>
+                        <vab-icon icon="lock-line" />
+                    </template>
+                </el-input>
+            </el-form-item>
             <el-form-item prop="passwordConfirm">
                 <el-input
                     v-model.trim="form.passwordConfirm"
@@ -66,37 +62,33 @@
                     v-model.trim="form.inviteCode"
                     :placeholder="translateTitle('请输入邀请码')"
                     type="text"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="ticket-line" />
-                            </template>
-                        </el-input>
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button
-                            class="register-btn"
-                            type="primary"
-                            @click.prevent="handleRegister"
-                        >
-                            {{ translateTitle('注册') }}
-                        </el-button>
-                    </el-form-item>
-                    <el-form-item>
-                        <router-link to="/login">
-                            {{ translateTitle('登录') }}
-                        </router-link>
-                    </el-form-item>
-                </el-form>
-            </el-col>
-            <el-col :lg="1" :md="1" :sm="24" :xl="1" :xs="24">
-                <div style="color: transparent">占位符</div>
-            </el-col>
-        </el-row>
+                >
+                    <template #prefix>
+                        <vab-icon icon="ticket-line" />
+                    </template>
+                </el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button
+                    class="register-btn"
+                    type="primary"
+                    @click.prevent="handleRegister"
+                >
+                    {{ translateTitle('注册') }}
+                </el-button>
+            </el-form-item>
+            <el-form-item class="register-link">
+                <router-link to="/login">
+                    {{ translateTitle('已有账号？去登录') }}
+                </router-link>
+            </el-form-item>
+        </el-form>
     </div>
 </template>
 
 <script>
     import { translate } from '@/i18n'
+    import { useSettingsStore } from '@/store/modules/settings'
     import { isPassword } from '@/utils/validate'
     import { register } from '@/api/user'
     import { useUserStore } from '@/store/modules/user'
@@ -105,7 +97,7 @@
         name: 'Register',
         directives: {
             focus: {
-                inserted(el) {
+                mounted(el) {
                     el.querySelector('input').focus()
                 },
             },
@@ -117,6 +109,7 @@
 
             const userStore = useUserStore()
             const { setToken } = userStore
+            const settingsStore = useSettingsStore()
 
             const validateUsername = (rule, value, callback) => {
                 if ('' === value) {
@@ -224,6 +217,7 @@
             return {
                 translateTitle: translate,
                 ...toRefs(state),
+                platformTitle: settingsStore.getTitle,
                 handleRegister,
             }
         },
@@ -231,117 +225,80 @@
 </script>
 
 <style lang="scss" scoped>
-    .register-container {
-        height: 100vh;
-        min-height: 700px;
-        background: url('~@/assets/login_images/background.jpg') center center
-            fixed no-repeat;
-        background-size: cover;
+    .auth-page {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: clamp(24px, 6vw, 60px);
+        background-color: #f5f7ff;
+        overflow: hidden;
 
-        .register-form {
-            position: relative;
-            max-width: 100%;
-            padding: 4.5vh;
-            margin: calc((100vh - 555px) / 2) 5vw 5vw;
-            overflow: hidden;
-            background: url('~@/assets/login_images/login_form.png');
-            background-size: 100% 100%;
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('~@/assets/login_images/home_bg_final.jpg')
+                center center / cover no-repeat;
+            z-index: 0;
+        }
+    }
 
-            .title {
-                font-size: 54px;
-                font-weight: 500;
-                color: var(--el-color-white);
-            }
+    .auth-form {
+        width: min(440px, 90vw);
+        padding: clamp(20px, 4vw, 32px);
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 16px;
+        box-shadow: 0 18px 48px rgba(31, 47, 74, 0.12);
+        backdrop-filter: blur(6px);
+        margin-left: clamp(12px, 4vw, 48px);
+        position: relative;
+        z-index: 1;
+        animation: float-in 450ms ease 30ms both;
 
-            .title-tips {
-                margin-top: 29px;
-                text-overflow: ellipsis;
-                font-size: 26px;
-                font-weight: 400;
-                color: var(--el-color-white);
-                white-space: nowrap;
-            }
-
-            .register-btn {
-                display: inherit;
-                width: 220px;
-                height: 50px;
-                margin-top: 5px;
-                background: var(--el-color-primary);
-                border: 0;
-
-                &:hover {
-                    opacity: 0.9;
-                }
-            }
-
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2f4a;
         }
 
-        .tips {
-            margin-bottom: 10px;
-            font-size: $base-font-size-default;
-            color: var(--el-color-white);
+        .title-tips {
+            margin-top: 6px;
+            margin-bottom: 18px;
+            font-size: 16px;
+            color: #5f6f85;
+        }
 
-            span {
-                &:first-of-type {
-                    margin-right: 16px;
-                }
-            }
+        .register-btn {
+            width: 100%;
+            height: 46px;
+            font-weight: 600;
+        }
+
+        .register-link {
+            margin-top: -8px;
+            text-align: right;
         }
 
         :deep() {
             .el-form-item {
-                padding-right: 0;
-                margin: 20px 0;
-                color: #454545;
-                background: transparent;
-                border: 1px solid transparent;
-                border-radius: 2px;
-
-                &__content {
-                    min-height: $base-input-height;
-                    line-height: $base-input-height;
-                }
-
-                &__error {
-                    position: absolute;
-                    top: 100%;
-                    left: 18px;
-                    font-size: $base-font-size-small;
-                    line-height: 18px;
-                    color: var(--el-color-error);
-                }
+                margin: 14px 0;
             }
 
-            .el-input {
-                box-sizing: border-box;
-
-                input {
-                    height: 48px;
-                    line-height: 48px;
-                    border: 0;
-                }
-
-                &__suffix-inner {
-                    position: absolute;
-                    right: 15px;
-                    cursor: pointer;
-
-                    .el-input__count {
-                        position: absolute;
-                        top: 25px;
-                        right: 0;
-                    }
-                }
+            .el-input__wrapper {
+                border-radius: 12px;
             }
+        }
+    }
 
-            .code {
-                position: absolute;
-                top: 4px;
-                right: 4px;
-                cursor: pointer;
-                border-radius: $base-border-radius;
-            }
+    @keyframes float-in {
+        from {
+            transform: translateY(18px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
         }
     }
 </style>

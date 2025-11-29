@@ -8,6 +8,26 @@ from pydantic import BaseModel, EmailStr, Field
 class LoginRequest(BaseModel):
     username: str = Field(..., description="用户名")
     password: str = Field(..., description="密码")
+    captcha_code: str = Field(
+        ..., alias="captchaCode", description="验证码文本（必填）"
+    )
+    captcha_token: str = Field(
+        ..., alias="captchaToken", description="验证码令牌（必填）"
+    )
+
+    model_config = {
+        "populate_by_name": True,
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "username": "admin",
+                    "password": "123456",
+                    "captchaCode": "ABCD",
+                    "captchaToken": "base64-token",
+                }
+            ]
+        },
+    }
 
 
 class RegisterRequest(BaseModel):

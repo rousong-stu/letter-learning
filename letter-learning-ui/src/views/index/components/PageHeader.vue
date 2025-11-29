@@ -1,13 +1,12 @@
 <script setup>
     import { useUserStore } from '@/store/modules/user'
-    import { getList } from '@/api/description'
     import VabAvatarList from '@/plugins/VabAvatarList'
 
     const userStore = useUserStore()
     const { avatar, username } = storeToRefs(userStore)
 
     const state = reactive({
-        description: '',
+        description: '你不是一个人在努力，无数个未来的你正在为现在的坚持鼓掌。',
         avatarList: [
             {
                 avatar: 'https://i.gtimg.cn/club/item/face/img/2/15922_100.gif',
@@ -33,37 +32,9 @@
               : hour <= 13
                 ? `中午好 ${username.value}，忙碌了一上午，记得吃午饭哦。`
                 : hour < 18
-                  ? `下午好 ${username.value}，你一定有些累了，喝杯咖啡提提神。`
+                  ? `下午好 ${username.value}，欢迎回来。继续你的学习之旅吧，再小的进步，也是向前。`
                   : `晚上好 ${username.value}，愿你天黑有灯，下雨有伞。`
     }
-    const fetchData = async () => {
-        const {
-            data: { description },
-        } = await getList()
-        state.description = description
-
-        nextTick(() => {
-            const descriptionElement = document.querySelector(
-                '.page-header-tip-description'
-            )
-            if (descriptionElement) {
-                const scripts = descriptionElement.querySelectorAll('script')
-                scripts.forEach((script) => {
-                    const newScript = document.createElement('script')
-                    if (script.src) {
-                        newScript.src = script.src
-                    } else {
-                        newScript.textContent = script.textContent
-                    }
-                    document.head.appendChild(newScript)
-                })
-            }
-        })
-    }
-
-    onMounted(() => {
-        fetchData()
-    })
 </script>
 
 <template>

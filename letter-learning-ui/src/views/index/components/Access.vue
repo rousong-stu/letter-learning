@@ -1,8 +1,8 @@
 <template>
     <vab-card class="access" shadow="never">
         <template #header>
-            <vab-icon icon="line-chart-line" />
-            访问量
+            <vab-icon icon="chat-smile-2-line" />
+            对话次数
             <el-tag class="card-header-tag" type="success">日</el-tag>
         </template>
         <vab-chart
@@ -12,7 +12,7 @@
         />
         <div class="bottom">
             <span>
-                日均访问量:
+                日均对话轮次:
                 <vab-count
                     :decimals="countConfig.decimals"
                     :duration="countConfig.duration"
@@ -32,6 +32,7 @@
     import VabChart from '@/plugins/VabChart'
     import VabCount from '@/plugins/VabCount'
     import { useSettingsStore } from '@/store/modules/settings'
+    import { getDashboardSummary } from '@/api/dashboard'
 
     export default defineComponent({
         components: {
@@ -42,10 +43,9 @@
             const settingsStore = useSettingsStore()
             const { echartsGraphic1 } = storeToRefs(settingsStore)
             const state = reactive({
-                timer: null,
                 countConfig: {
                     startVal: 0,
-                    endVal: _.random(20000, 60000),
+                    endVal: _.random(100, 400),
                     decimals: 0,
                     prefix: '',
                     suffix: '',
@@ -84,7 +84,7 @@
                     ],
                     series: [
                         {
-                            name: '访问量',
+                            name: '对话次数',
                             type: 'line',
                             data: [],
                             smooth: true,
@@ -126,46 +126,21 @@
                 }
             )
 
+            const loadData = async () => {
+                const resp = await getDashboardSummary()
+                const trends = resp.data?.chat_trends || []
+                state.option.xAxis[0].data = trends.map((t) =>
+                    t.date ? t.date.slice(5) : ''
+                )
+                state.option.series[0].data = trends.map((t) => t.count || 0)
+                state.countConfig.endVal = trends.reduce(
+                    (sum, t) => sum + (t.count || 0),
+                    0
+                )
+            }
+
             onMounted(() => {
-                const base = +new Date(2021, 1, 1)
-                const oneDay = 24 * 3600 * 1000
-                const date = []
-
-                const data = [Math.random() * 1500]
-                let now = new Date(base)
-
-                const addData = (shift) => {
-                    now = [
-                        now.getFullYear(),
-                        now.getMonth() + 1,
-                        now.getDate(),
-                    ].join('/')
-                    date.push(now)
-                    data.push(_.random(20000, 60000))
-
-                    if (shift) {
-                        date.shift()
-                        data.shift()
-                    }
-                    now = new Date(+new Date(now) + oneDay)
-                    state.option.xAxis[0].data = []
-                    state.option.series[0].data = []
-                    state.option.xAxis[0].data = date
-                    state.option.series[0].data = data
-                }
-
-                for (let i = 1; i < 6; i++) {
-                    addData()
-                }
-
-                state.timer = setInterval(() => {
-                    addData(true)
-                }, 5000)
-            })
-
-            onBeforeRouteLeave((to, from, next) => {
-                clearInterval(state.timer)
-                next()
+                loadData().catch((err) => console.error(err))
             })
 
             return {

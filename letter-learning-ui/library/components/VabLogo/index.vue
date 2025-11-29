@@ -1,8 +1,16 @@
 <script lang="ts" setup>
+    import { computed } from 'vue'
     import { useSettingsStore } from '@/store/modules/settings'
 
     const settingsStore = useSettingsStore()
     const { theme, logo, title } = storeToRefs(settingsStore)
+
+    const logoImg = computed(() => {
+        if (!logo.value) return ''
+        // 允许直接传入 public 下的图标路径
+        if (logo.value.endsWith('.ico') || logo.value.endsWith('.png')) return logo.value
+        return ''
+    })
 </script>
 
 <template>
@@ -14,8 +22,9 @@
     >
         <router-link to="/">
             <span class="logo">
+                <img v-if="logoImg" :src="logoImg" alt="logo" />
                 <!-- 使用自定义svg示例 -->
-                <vab-icon v-if="logo" :icon="logo" is-custom-svg />
+                <vab-icon v-else-if="logo" :icon="logo" is-custom-svg />
             </span>
             <span
                 class="title"

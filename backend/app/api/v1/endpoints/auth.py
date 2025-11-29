@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
 import logging
+import random
+import string
+import time
 import asyncio
 from datetime import date, datetime
 
@@ -8,6 +15,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.config import get_settings
 from app.core.dependencies import get_current_user, get_token_credentials
 from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import decode_token
@@ -25,7 +33,49 @@ DEFAULT_AVATAR = (
     "https://i.gtimg.cn/club/item/face/img/2/15922_100.gif"
 )  # 与前端默认头像保持一致
 INVITE_CODE = "letter-learning"
+settings = get_settings()
 logger = logging.getLogger(__name__)
+
+
+def _gen_captcha_code(length: int = 4) -> str:
+    pool = string.ascii_uppercase + string.digits
+    return "".join(random.choice(pool) for _ in range(length))
+
+
+def _captcha_token(code: str, ttl_seconds: int = 300) -> str:
+    payload = {
+        "c": code,
+        "exp": int(time.time()) + ttl_seconds,
+    }
+    raw = json.dumps(payload, separators=(",", ":")).encode()
+    sig = hmac.new(settings.jwt_secret.encode(), raw, hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(raw + sig).decode()
+
+
+def _verify_captcha(token: str, code: str) -> bool:
+    try:
+        data = base64.urlsafe_b64decode(token.encode())
+        raw, sig = data[:-32], data[-32:]
+        expected = hmac.new(settings.jwt_secret.encode(), raw, hashlib.sha256).digest()
+        if not hmac.compare_digest(sig, expected):
+            return False
+        payload = json.loads(raw.decode())
+        if payload.get("exp", 0) < time.time():
+            return False
+        return payload.get("c", "").upper() == code.upper()
+    except Exception:
+        return False
+
+
+def _captcha_svg(code: str) -> str:
+    colors = ["#3d8cff", "#10c469", "#f6c343", "#ff7b1b"]
+    fill = random.choice(colors)
+    svg = f"""<svg xmlns='http://www.w3.org/2000/svg' width='120' height='44'>
+    <rect width='120' height='44' rx='10' ry='10' fill='rgba(255,255,255,0.9)' stroke='none'/>
+    <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+          font-family='Inter,Arial,sans-serif' font-size='22' font-weight='700' fill='{fill}'>{code}</text>
+    </svg>"""
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 
 def _should_auto_generate_story(last_login_at: datetime | None) -> bool:
@@ -67,6 +117,8 @@ async def login(
     request: Request,
     session: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
+    if not _verify_captcha(payload.captcha_token, payload.captcha_code):
+        return error_response("验证码错误或已过期", code=400)
     try:
         user = await auth_service.authenticate_user(
             session,
@@ -117,6 +169,14 @@ async def login(
         )
 
     return success_response(TokenData(token=token).model_dump(), msg="登录成功")
+
+
+@router.get("/captcha")
+async def get_captcha() -> JSONResponse:
+    code = _gen_captcha_code()
+    token = _captcha_token(code)
+    image = _captcha_svg(code)
+    return success_response({"captchaToken": token, "image": image})
 
 
 @router.post("/register")

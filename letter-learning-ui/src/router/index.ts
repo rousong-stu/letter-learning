@@ -62,7 +62,7 @@ export const asyncRoutes: VabRouteRecord[] = [
         path: '/',
         name: 'Root',
         component: Layout,
-        redirect: '/word-story/index',
+        redirect: '/home',
         meta: {
             title: '首页',
             icon: 'home-2-line',
@@ -70,13 +70,23 @@ export const asyncRoutes: VabRouteRecord[] = [
         },
         children: [
             {
+                path: 'home',
+                name: 'Home',
+                component: () => import('@/views/home/index.vue'),
+                meta: {
+                    title: '首页',
+                    icon: 'home-2-line',
+                    noClosable: true,
+                },
+            },
+            {
                 path: 'index',
                 name: 'Index',
                 component: () => import('@/views/index/index.vue'),
                 meta: {
                     title: '首页',
                     icon: 'home-2-line',
-                    noClosable: true,
+                    hidden: true,
                 },
             },
             {

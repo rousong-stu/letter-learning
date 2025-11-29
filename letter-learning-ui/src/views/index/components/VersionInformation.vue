@@ -1,134 +1,143 @@
 <script lang="ts" setup>
-    const { dependencies, devDependencies, lastBuildTime, version } =
-        __APP_INFO__
+    import { getCurrentUserPlan } from '@/api/userWordBook'
 
-    const handleUrl = (name: string) => {
-        window.open(`https://github.com/${name}/releases`)
+    const bookInfo = reactive({
+        title: '尚未选择单词书',
+        description: '请选择或上传一个单词书，开始学习旅程。',
+        coverUrl: '',
+        tags: [] as string[],
+        totalWords: 0,
+        status: '',
+        language: '',
+        level: '',
+    })
+
+    const loadPlan = async () => {
+        try {
+            const resp = await getCurrentUserPlan()
+            const payload = resp.data
+            if (payload && payload.word_book) {
+                const book = payload.word_book
+                bookInfo.title = book.title || '未命名单词书'
+                bookInfo.description = book.description || '暂无简介'
+                bookInfo.coverUrl = book.cover_url || ''
+                bookInfo.tags = book.tags || []
+                bookInfo.totalWords = book.total_words || 0
+                bookInfo.language = book.language || ''
+                bookInfo.level = book.level || ''
+                bookInfo.status =
+                    payload.status === 'active' ? '进行中' : payload.status || ''
+            }
+        } catch (error) {
+            // 保持默认占位
+            console.error('加载单词书失败', error)
+        }
     }
+
+    onMounted(() => {
+        loadPlan()
+    })
 </script>
 
 <template>
     <vab-card class="version-information" shadow="never">
         <template #header>
             <vab-icon icon="information-line" />
-            信息
-            <el-tag class="card-header-tag">
-                当前版本：V{{ version }} &nbsp; 部署时间：{{ lastBuildTime }}
-            </el-tag>
+            当前单词书
         </template>
-        <el-scrollbar>
-            <table class="table">
-                <tbody>
-                    <tr>
-                        <td @dblclick="handleUrl('vuejs/core')">vue</td>
-                        <td>
-                            {{ dependencies['vue'] }}
-                            <el-popover
-                                content="已升级至最新版本"
-                                placement="top-start"
-                                trigger="hover"
-                                :width="200"
-                            >
-                                <template #reference>
-                                    <vab-icon icon="arrow-up-line" />
-                                </template>
-                            </el-popover>
-                        </td>
-                        <td @dblclick="handleUrl('antfu/unplugin-auto-import')">
-                            unplugin-auto-import
-                        </td>
-                        <td>{{ devDependencies['unplugin-auto-import'] }}</td>
-                    </tr>
-                    <tr>
-                        <td @dblclick="handleUrl('vuejs/pinia')">pinia</td>
-                        <td>{{ dependencies['pinia'] }}</td>
-                        <td>vue-router</td>
-                        <td>{{ dependencies['vue-router'] }}</td>
-                    </tr>
-                    <tr>
-                        <td @dblclick="handleUrl('microsoft/TypeScript')">
-                            typescript
-                        </td>
-                        <td>{{ devDependencies['typescript'] }}</td>
-                        <td @dblclick="handleUrl('element-plus/element-plus')">
-                            element-plus
-                        </td>
-                        <td>
-                            {{ dependencies['element-plus'] }}
-                            <el-popover
-                                content="已升级至最新版本"
-                                placement="top-start"
-                                trigger="hover"
-                                :width="200"
-                            >
-                                <template #reference>
-                                    <vab-icon icon="arrow-up-line" />
-                                </template>
-                            </el-popover>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>授权渠道</td>
-                        <td colspan="3">
-                            <a
-                                href="https://api.vuejs-core.cn/pay/alipayPageRedirect?amount=799"
-                                target="_blank"
-                            >
-                                <el-button type="primary">一键购买</el-button>
-                            </a>
-                            <a
-                                href="https://vuejs-core.cn/authorization"
-                                target="_blank"
-                            >
-                                <el-button plain type="primary">
-                                    购买源码 ￥799
-                                </el-button>
-                            </a>
-
-                            <a
-                                href="https://github.com/zxwk1998/vue-admin-better/"
-                                target="_blank"
-                            >
-                                <el-button plain type="warning">
-                                    开源免费版
-                                </el-button>
-                            </a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </el-scrollbar>
+        <div class="book-card">
+            <div class="cover">
+                <img
+                    v-if="bookInfo.coverUrl"
+                    :src="bookInfo.coverUrl"
+                    alt="cover"
+                />
+                <div v-else class="placeholder">封面</div>
+            </div>
+            <div class="book-info">
+                <div class="book-title">{{ bookInfo.title }}</div>
+                <div class="book-desc">{{ bookInfo.description }}</div>
+                <div class="book-meta">
+                    <el-tag v-if="bookInfo.status" size="small" type="success">
+                        {{ bookInfo.status }}
+                    </el-tag>
+                    <el-tag v-if="bookInfo.language" size="small" effect="plain">
+                        {{ bookInfo.language }}
+                    </el-tag>
+                    <el-tag v-if="bookInfo.level" size="small" effect="plain">
+                        {{ bookInfo.level }}
+                    </el-tag>
+                </div>
+                <div class="book-extra">
+                    <span>总词数：{{ bookInfo.totalWords }}</span>
+                    <div class="tags">
+                        <el-tag
+                            v-for="tag in bookInfo.tags"
+                            :key="tag"
+                            size="small"
+                            effect="plain"
+                        >
+                            {{ tag }}
+                        </el-tag>
+                    </div>
+                </div>
+            </div>
+        </div>
     </vab-card>
 </template>
 
 <style lang="scss" scoped>
     .version-information {
-        .table {
-            width: 100%;
+        .book-card {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .cover {
+            width: 120px;
+            height: 160px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f7fa;
+            display: grid;
+            place-items: center;
+            color: #999;
+            font-weight: 600;
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+        .book-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .book-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .book-desc {
             color: #666;
-            border-collapse: collapse;
-            background-color: #fff;
-
-            td {
-                position: relative;
-                padding: 9px 15px !important;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                font-size: 14px;
-                white-space: nowrap;
-                border: 1px solid #e6e6e6;
-
-                i {
-                    vertical-align: -3px;
-                    color: var(--el-color-success);
-                    cursor: pointer;
-                }
-
-                &:nth-child(odd) {
-                    width: 20%;
-                    text-align: right;
-                    background-color: #f7f7f7;
-                }
+            line-height: 1.5;
+        }
+        .book-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .book-extra {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            color: #444;
+            .tags {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
             }
         }
     }

@@ -1,108 +1,111 @@
 <template>
-    <div class="login-container">
-        <el-row>
-            <el-col :lg="14" :md="11" :sm="24" :xl="14" :xs="24">
-                <div style="color: transparent">占位符</div>
-            </el-col>
-            <el-col :lg="9" :md="12" :sm="24" :xl="9" :xs="24">
-                <el-form
-                    ref="formRef"
-                    class="login-form"
-                    label-position="left"
-                    :model="form"
-                    :rules="rules"
+    <div class="auth-page">
+        <transition name="fade-fast">
+            <div v-if="loading" class="lottie-overlay">
+                <lottie-player
+                    src="/loading-text.lottie"
+                    background="transparent"
+                    speed="1"
+                    loop
+                    autoplay
+                    style="width: 180px; height: 180px"
+                />
+                <p class="lottie-desc">欢迎选择Lumilyx，智慧学习即刻开始！</p>
+            </div>
+        </transition>
+
+        <el-form
+            ref="formRef"
+            class="auth-form"
+            label-position="left"
+            :model="form"
+            :rules="rules"
+            @keyup.enter.stop
+        >
+            <div class="title">欢迎回来，学友！</div>
+            <div class="title-tips">
+                A journey of a thousand miles begins with a single word！
+            </div>
+            <el-form-item prop="username">
+                <el-input
+                    v-model.trim="form.username"
+                    v-focus
+                    :placeholder="translateTitle('请输入用户名')"
+                    tabindex="1"
+                    type="text"
                 >
-                    <div class="title">hello !</div>
-                    <div class="title-tips">
-                        {{ translateTitle('欢迎来到') }}{{ title }}！
-                    </div>
-                    <el-form-item prop="username">
-                        <el-input
-                            v-model.trim="form.username"
-                            v-focus
-                            :placeholder="translateTitle('请输入用户名')"
-                            tabindex="1"
-                            type="text"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="user-line" />
-                            </template>
-                        </el-input>
-                    </el-form-item>
-                    <el-form-item prop="password">
-                        <el-input
-                            :key="passwordType"
-                            ref="passwordRef"
-                            v-model.trim="form.password"
-                            :placeholder="translateTitle('请输入密码')"
-                            tabindex="2"
-                            :type="passwordType"
-                            @keyup.enter="handleLogin"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="lock-line" />
-                            </template>
-                            <template
-                                v-if="passwordType === 'password'"
-                                #suffix
-                            >
-                                <vab-icon
-                                    class="show-password"
-                                    icon="eye-off-line"
-                                    @click="handlePassword"
-                                />
-                            </template>
-                            <template v-else #suffix>
-                                <vab-icon
-                                    class="show-password"
-                                    icon="eye-line"
-                                    @click="handlePassword"
-                                />
-                            </template>
-                        </el-input>
-                    </el-form-item>
-                    <!-- 验证码验证逻辑需自行开发，如不需要验证码功能建议注释 -->
-                    <el-form-item prop="verificationCode">
-                        <el-input
-                            v-model.trim="form.verificationCode"
-                            :placeholder="
-                                translateTitle('验证码') + previewText
-                            "
-                            tabindex="3"
-                            type="text"
-                        >
-                            <template #prefix>
-                                <vab-icon icon="barcode-box-line" />
-                            </template>
-                        </el-input>
-                        <el-image
-                            class="code"
-                            :src="codeUrl"
-                            @click="changeCode"
+                    <template #prefix>
+                        <vab-icon icon="user-line" />
+                    </template>
+                </el-input>
+            </el-form-item>
+            <el-form-item prop="password">
+                <el-input
+                    :key="passwordType"
+                    ref="passwordRef"
+                    v-model.trim="form.password"
+                    :placeholder="translateTitle('请输入密码')"
+                    tabindex="2"
+                    :type="passwordType"
+                    @keyup.enter.stop
+                >
+                    <template #prefix>
+                        <vab-icon icon="lock-line" />
+                    </template>
+                    <template v-if="passwordType === 'password'" #suffix>
+                        <vab-icon
+                            class="show-password"
+                            icon="eye-off-line"
+                            @click="handlePassword"
                         />
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button
-                            class="login-btn"
-                            :loading="loading"
-                            type="primary"
-                            @click="handleLogin"
-                        >
-                            {{ translateTitle('登录') }}
-                        </el-button>
-                    </el-form-item>
-                    <el-form-item>
-                        <router-link to="/register">
-                            {{ translateTitle('注册') }}
-                        </router-link>
-                    </el-form-item>
-                </el-form>
-            </el-col>
-            <el-col :lg="1" :md="1" :sm="24" :xl="1" :xs="24">
-                <div style="color: transparent">占位符</div>
-            </el-col>
-        </el-row>
-        <vab-footer />
+                    </template>
+                    <template v-else #suffix>
+                        <vab-icon
+                            class="show-password"
+                            icon="eye-line"
+                            @click="handlePassword"
+                        />
+                    </template>
+                </el-input>
+            </el-form-item>
+            <el-form-item prop="captchaCode" class="captcha-row">
+                <div class="captcha-field">
+                    <el-input
+                        v-model.trim="form.captchaCode"
+                        :placeholder="translateTitle('请输入验证码')"
+                        tabindex="3"
+                    >
+                        <template #prefix>
+                            <vab-icon icon="barcode-box-line" />
+                        </template>
+                    </el-input>
+                    <img
+                        class="captcha-img"
+                        :src="captchaImg"
+                        alt="captcha"
+                        @click="fetchCaptcha"
+                    />
+                </div>
+            </el-form-item>
+            <el-form-item>
+                <el-checkbox v-model="remember">记住密码</el-checkbox>
+            </el-form-item>
+            <el-form-item>
+                <el-button
+                    class="login-btn"
+                    :loading="loading"
+                    type="primary"
+                    @click="handleLogin"
+                >
+                    {{ translateTitle('登录') }}
+                </el-button>
+            </el-form-item>
+            <el-form-item class="register-link">
+                <router-link to="/register">
+                    {{ translateTitle('注册') }}
+                </router-link>
+            </el-form-item>
+        </el-form>
     </div>
 </template>
 
@@ -110,7 +113,9 @@
     import { useSettingsStore } from '@/store/modules/settings'
     import { useUserStore } from '@/store/modules/user'
     import { translate } from '@/i18n'
+    import '@lottiefiles/lottie-player'
     import { isPassword } from '@/utils/validate'
+    import { getCaptcha } from '@/api/user'
 
     export default defineComponent({
         name: 'Login',
@@ -147,7 +152,8 @@
                 form: {
                     username: '',
                     password: '',
-                    verificationCode: '',
+                    remember: false,
+                    captchaCode: '',
                 },
                 rules: {
                     username: [
@@ -164,20 +170,20 @@
                             validator: validatePassword,
                         },
                     ],
-                    /* verificationCode: [
-          {
-            required: true,
-            trigger: 'blur',
-            message: '验证码不能空',
-          },
-        ], */
+                    captchaCode: [
+                        {
+                            required: true,
+                            trigger: 'blur',
+                            message: translate('请输入验证码'),
+                        },
+                    ],
                 },
                 loading: false,
                 passwordType: 'password',
                 redirect: undefined,
                 timer: 0,
-                codeUrl: 'https://www.oschina.net/action/user/captcha',
-                previewText: '',
+                captchaToken: '',
+                captchaImg: '',
             })
 
             const handleRoute = () => {
@@ -193,36 +199,64 @@
                     state['passwordRef'].focus()
                 })
             }
+            const fetchCaptcha = async () => {
+                try {
+                    const resp = await getCaptcha()
+                    state.captchaToken = resp.data?.captchaToken || ''
+                    state.captchaImg = resp.data?.image || ''
+                    state.form.captchaCode = ''
+                } catch (error) {
+                    console.error('获取验证码失败', error)
+                }
+            }
+
             const handleLogin = async () => {
                 state['formRef'].validate(async (valid) => {
                     if (valid)
                         try {
                             state.loading = true
-                            await login(state.form).catch(() => {})
+                            await login({
+                                ...state.form,
+                                captchaToken: state.captchaToken,
+                            })
+                                .then(() => {
+                                    if (state.form.remember) {
+                                        localStorage.setItem(
+                                            'remember_login',
+                                            JSON.stringify({
+                                                username: state.form.username,
+                                                password: state.form.password,
+                                            })
+                                        )
+                                    } else {
+                                        localStorage.removeItem('remember_login')
+                                    }
+                                })
+                                .catch(() => {
+                                    fetchCaptcha()
+                                })
                             await router.push(handleRoute())
                         } finally {
                             state.loading = false
                         }
                 })
             }
-            const changeCode = () => {
-                state.codeUrl = `https://www.oschina.net/action/user/captcha?timestamp=${Date.now()}`
-            }
-
-            // 国家法律法规要求显示备案号 实际项目请自行为自己的备案信息及域名
-            const beianShow = ref(false)
-
             onBeforeMount(() => {
-                state.form.username = 'admin'
-                state.form.password = '123456'
-                // 为了演示效果，会在官网演示页自动登录到首页，正式开发可删除
-                if (location.hostname === 'veujs-core.cn') {
-                    beianShow.value = true
-                    state.previewText = '（演示地址验证码可不填）'
-                    state.timer = setTimeout(() => {
-                        handleLogin()
-                    }, 5000)
+                const saved = localStorage.getItem('remember_login')
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved)
+                        state.form.username = parsed.username || ''
+                        state.form.password = parsed.password || ''
+                        state.form.remember = true
+                    } catch (e) {
+                        localStorage.removeItem('remember_login')
+                    }
+                } else {
+                    state.form.username = 'admin'
+                    state.form.password = '123456'
                 }
+                fetchCaptcha()
             })
 
             watchEffect(() => {
@@ -240,153 +274,144 @@
                 title: settingsStore.getTitle,
                 handlePassword,
                 handleLogin,
-                changeCode,
+                fetchCaptcha,
             }
         },
     })
 </script>
 
 <style lang="scss" scoped>
-    .login-container {
-        height: 100vh;
-        background: url('~@/assets/login_images/background.jpg') center center
-            fixed no-repeat;
-        background-size: cover;
+    .auth-page {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: clamp(24px, 6vw, 60px);
+        background-color: #f5f7ff;
+        overflow: hidden;
 
-        .login-form {
-            position: relative;
-            max-width: 100%;
-            padding: 4.5vh;
-            margin: calc((100vh - 555px) / 2) 5vw 5vw;
-            overflow: hidden;
-            background: url('~@/assets/login_images/login_form.png');
-            background-size: 100% 100%;
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('~@/assets/login_images/home_bg_final.jpg')
+                center center / cover no-repeat;
+            z-index: 0;
+        }
+    }
 
-            .title {
-                font-size: 54px;
-                font-weight: 500;
-                color: var(--el-color-white);
-            }
+    .auth-form {
+        width: min(420px, 90vw);
+        padding: clamp(20px, 4vw, 32px);
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 16px;
+        box-shadow: 0 18px 48px rgba(31, 47, 74, 0.12);
+        backdrop-filter: blur(6px);
+        margin-left: clamp(12px, 4vw, 48px);
+        position: relative;
+        z-index: 1;
+        animation: float-in 450ms ease 30ms both;
 
-            .title-tips {
-                margin-top: 29px;
-                font-size: 26px;
-                font-weight: 400;
-                color: var(--el-color-white);
-            }
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2f4a;
+        }
 
-            .login-btn {
-                display: inherit;
-                width: 220px;
-                height: 50px;
-                margin-top: 5px;
-                background: var(--el-color-primary);
-                border: 0;
+        .title-tips {
+            margin-top: 6px;
+            margin-bottom: 18px;
+            font-size: 16px;
+            color: #5f6f85;
+        }
 
-                &:hover {
-                    opacity: 0.9;
-                }
-            }
+        .login-btn {
+            width: 100%;
+            height: 46px;
+            font-weight: 600;
+        }
 
-            .tips {
-                margin-bottom: 10px;
-                font-size: $base-font-size-default;
-                color: var(--el-color-white);
+        .register-link {
+            margin-top: -8px;
+            text-align: right;
+        }
 
-                span {
-                    &:first-of-type {
-                        margin-right: 16px;
-                    }
-                }
-            }
+        .show-password {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+        }
 
-            .title-container {
-                position: relative;
+        .captcha-row {
+            margin-top: 6px;
+        }
 
-                .title {
-                    margin: 0 auto 40px;
-                    font-size: 34px;
-                    font-weight: bold;
-                    color: var(--el-color-primary);
-                    text-align: center;
-                }
-            }
+        .captcha-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-            i {
-                position: absolute;
-                top: 8px;
-                left: 15px;
-                font-size: 16px;
-            }
+        .captcha-field :deep(.el-input) {
+            flex: 1;
+        }
 
-            .show-password {
-                float: right;
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
-            }
-
-            :deep() {
-                .el-form-item {
-                    padding-right: 0;
-                    margin: 20px 0;
-                    color: #454545;
-                    background: transparent;
-                    border: 1px solid transparent;
-                    border-radius: 2px;
-
-                    &__content {
-                        min-height: $base-input-height;
-                        line-height: $base-input-height;
-                    }
-
-                    &__error {
-                        position: absolute;
-                        top: 100%;
-                        left: 18px;
-                        font-size: $base-font-size-small;
-                        line-height: 18px;
-                        color: var(--el-color-error);
-                    }
-                }
-
-                .el-input {
-                    box-sizing: border-box;
-
-                    input {
-                        height: 48px;
-                        padding-left: 30px;
-                        line-height: 48px;
-                        border: 0;
-                    }
-
-                    &__suffix-inner {
-                        position: absolute;
-                        right: 65px;
-                        cursor: pointer;
-                    }
-                }
-
-                .code {
-                    position: absolute;
-                    top: 4px;
-                    right: 4px;
-                    cursor: pointer;
-                    border-radius: $base-border-radius;
-                }
-            }
+        .captcha-img {
+            width: 102px;
+            height: 32px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px #e0e6ed;
+            object-fit: contain;
+            background: #fff;
         }
 
         :deep() {
-            .vab-footer {
-                position: fixed;
-                bottom: 20px;
-                width: 100%;
-                color: #fff !important;
-                text-align: center;
-                background: transparent;
-                border: 0;
+            .el-form-item {
+                margin: 14px 0;
+            }
+
+            .el-input__wrapper {
+                border-radius: 12px;
             }
         }
+    }
+
+    @keyframes float-in {
+        from {
+            transform: translateY(18px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .lottie-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.85);
+        z-index: 99;
+        backdrop-filter: blur(3px);
+
+        .lottie-desc {
+            margin-top: 10px;
+            color: #4a5b73;
+            font-weight: 600;
+        }
+    }
+
+    .fade-fast-enter-active,
+    .fade-fast-leave-active {
+        transition: opacity 0.25s ease;
+    }
+    .fade-fast-enter-from,
+    .fade-fast-leave-to {
+        opacity: 0;
     }
 </style>

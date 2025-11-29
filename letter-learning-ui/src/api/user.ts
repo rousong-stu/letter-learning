@@ -45,3 +45,10 @@ export function register(data: any) {
         data,
     })
 }
+
+export function getCaptcha() {
+    return request({
+        url: '/captcha',
+        method: 'get',
+    })
+}

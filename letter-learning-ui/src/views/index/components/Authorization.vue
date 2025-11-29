@@ -1,8 +1,8 @@
 <template>
     <vab-card class="authorization" shadow="never">
         <template #header>
-            <vab-icon icon="bar-chart-2-line" />
-            授权数
+            <vab-icon icon="brain-line" />
+            记忆曲线
             <el-tag class="card-header-tag" type="warning">周</el-tag>
         </template>
         <vab-chart
@@ -12,7 +12,7 @@
         />
         <div class="bottom">
             <span>
-                授权数:
+                记忆达成率:
                 <vab-count
                     :decimals="countConfig.decimals"
                     :duration="countConfig.duration"
@@ -22,9 +22,6 @@
                     :start-val="countConfig.startVal"
                     :suffix="countConfig.suffix"
                 />
-                <el-tag class="card-footer-tag" type="success">
-                    倒计时 {{ n }}s
-                </el-tag>
             </span>
         </div>
     </vab-card>
@@ -35,6 +32,7 @@
     import VabChart from '@/plugins/VabChart'
     import VabCount from '@/plugins/VabCount'
     import { useSettingsStore } from '@/store/modules/settings'
+    import { getDashboardSummary } from '@/api/dashboard'
 
     export default defineComponent({
         name: 'Authorization',
@@ -46,21 +44,18 @@
             const settingsStore = useSettingsStore()
             const { echartsGraphic2 } = storeToRefs(settingsStore)
             const state = reactive({
-                timer: null,
-                n: 5,
                 countConfig: {
                     startVal: 0,
-                    endVal: _.random(1000, 20000),
+                    endVal: _.random(60, 100),
                     decimals: 0,
                     prefix: '',
-                    suffix: '',
-                    separator: ',',
+                    suffix: '%',
+                    separator: '',
                     duration: 8000,
                 },
                 initOptions: {
                     renderer: 'svg',
                 },
-                // 授权数
                 option: {
                     tooltip: {
                         trigger: 'axis',
@@ -76,44 +71,28 @@
                     xAxis: [
                         {
                             type: 'category',
-                            data: [
-                                '0时',
-                                '4时',
-                                '8时',
-                                '12时',
-                                '16时',
-                                '20时',
-                                '24时',
-                            ],
-                            axisTick: {
-                                alignWithLabel: true,
-                            },
+                            data: ['11/12', '11/13', '11/14', '11/15', '11/16', '11/17'],
+                            axisTick: { alignWithLabel: true },
                         },
                     ],
-                    yAxis: [
-                        {
-                            type: 'value',
-                        },
-                    ],
+                    yAxis: [{ type: 'value', max: 100 }],
                     series: [
                         {
-                            name: '授权数',
-                            type: 'bar',
-                            barWidth: '60%',
-                            data: [10, 52, 20, 33, 39, 33, 22],
+                            name: '记忆达成率',
+                            type: 'line',
+                            smooth: true,
+                            data: [62, 68, 70, 72, 75, 78],
+                            areaStyle: {},
                             itemStyle: {
-                                borderRadius: [2, 2, 0, 0],
                                 color: new VabChart.graphic.LinearGradient(
                                     0,
                                     0,
                                     0,
                                     1,
-                                    echartsGraphic2.value.map(
-                                        (color, offset) => ({
-                                            color,
-                                            offset,
-                                        })
-                                    )
+                                    echartsGraphic2.value.map((color, offset) => ({
+                                        color,
+                                        offset,
+                                    }))
                                 ),
                             },
                         },
@@ -138,25 +117,20 @@
                 }
             )
 
-            onBeforeRouteLeave((to, from, next) => {
-                clearInterval(state.timer)
-                next()
-            })
-
             onMounted(() => {
-                state.timer = setInterval(() => {
-                    if (state.n > 0) {
-                        state.n--
-                    } else {
-                        state.option.series[0].type = _.sample(
-                            _.pull(
-                                ['bar', 'line', 'scatter'],
-                                state.option.series[0].type
-                            )
+                getDashboardSummary()
+                    .then((resp) => {
+                        const curve = resp.data?.memory_curve || []
+                        state.option.xAxis[0].data = curve.map((c) =>
+                            c.date ? c.date.slice(5) : ''
                         )
-                        state.n = 5
-                    }
-                }, 1000)
+                        state.option.series[0].data = curve.map(
+                            (c) => c.rate || 0
+                        )
+                        state.countConfig.endVal =
+                            resp.data?.summary?.completion_rate || 0
+                    })
+                    .catch((err) => console.error(err))
             })
 
             return {

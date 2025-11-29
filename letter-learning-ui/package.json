@@ -28,6 +28,7 @@
         "git": "start ./git.sh"
     },
     "dependencies": {
+        "@lottiefiles/lottie-player": "2.0.12",
         "@element-plus/icons-vue": "^2.3.2",
         "@logicflow/core": "2.1.1",
         "@logicflow/extension": "2.1.2",
