@@ -87,6 +87,19 @@ module.exports = defineConfig({
     },
     chainWebpack(config) {
         createChainWebpack(process.env.NODE_ENV, config)
+        // 将 lottie-player 视为自定义元素，避免 Vue 解析组件报错
+        config.module
+            .rule('vue')
+            .use('vue-loader')
+            .tap((options) => {
+                options.compilerOptions = options.compilerOptions || {}
+                const origin = options.compilerOptions.isCustomElement
+                options.compilerOptions.isCustomElement = (tag) => {
+                    if (origin && origin(tag)) return true
+                    return tag === 'lottie-player'
+                }
+                return options
+            })
     },
     runtimeCompiler: false,
     productionSourceMap: false,

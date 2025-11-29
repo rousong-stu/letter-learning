@@ -359,6 +359,8 @@ const submitPlan = async (reset: boolean) => {
         })
         ElMessage.success(reset ? '学习计划已重置' : '学习计划已保存')
         await fetchCurrentPlan()
+        // 更新计划后刷新页面数据，确保各页面使用最新计划
+        window.location.reload()
     } catch (error: any) {
         const message = error?.msg || '保存失败，请稍后重试'
         ElMessage.error(message)

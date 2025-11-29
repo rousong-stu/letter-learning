@@ -101,6 +101,9 @@
             onMounted(() => {
                 loadSummary()
             })
+            onActivated(() => {
+                loadSummary()
+            })
 
             return { summaryCards }
         },

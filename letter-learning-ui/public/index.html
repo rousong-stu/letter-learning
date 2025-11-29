@@ -24,28 +24,26 @@
     <noscript></noscript>
     <div id="app">
       <div class="first-loading-wrp">
-        <div class="loading-wrp">
-          <span class="dot dot-spin">
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-          </span>
+        <div class="lottie-container">
+          <lottie-player
+            src="https://assets10.lottiefiles.com/packages/lf20_usmfx6bp.json"
+            background="transparent"
+            speed="1"
+            loop
+            autoplay
+            style="width: 180px; height: 180px"
+          >
+          </lottie-player>
+          <p class="lottie-desc">欢迎选择Lumilyx，智慧学习即刻开始！</p>
         </div>
-        <h1><%= VUE_APP_TITLE %></h1>
       </div>
     </div>
 
     <script>
-      if (window.location.hostname !== 'localhost') {
-        var _hmt = _hmt || []
-        ;(function () {
-          const hm = document.createElement('script')
-          hm.src = 'https://hm.baidu.com/hm.js?085e0fa100dbc0e0e42931c16bf3e9e6'
-          const s = document.getElementsByTagName('script')[0]
-          s.parentNode.insertBefore(hm, s)
-        })()
-      }
-    </script>
+      const lottieScript = document.createElement('script')
+      lottieScript.setAttribute('src', 'https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js')
+      lottieScript.setAttribute('defer', 'defer')
+      document.head.appendChild(lottieScript)
+  </script>
   </body>
 </html>

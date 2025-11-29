@@ -37,6 +37,7 @@ async def get_today_story(
                 current_user,
                 story_date=story_date,
                 force=force,
+                allow_exceed=False,
             )
             await session.commit()
         except WordStoryGenerationError as exc:
@@ -53,10 +54,11 @@ async def get_today_story(
 
 @router.post("/generate")
 async def generate_story_endpoint(
-    payload: WordStoryGenerateRequest,
+    payload: WordStoryGenerateRequest | None = None,
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    payload = payload or WordStoryGenerateRequest()
     try:
         story = await word_story_service.generate_story(
             session,
@@ -64,6 +66,7 @@ async def generate_story_endpoint(
             words=payload.words,
             story_date=payload.story_date,
             force=payload.force,
+            allow_exceed=payload.allow_exceed,
         )
         await session.commit()
     except WordStoryGenerationError as exc:

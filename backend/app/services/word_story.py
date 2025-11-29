@@ -410,6 +410,7 @@ async def generate_story(
     words: Iterable[str] | None = None,
     story_date: date | None = None,
     force: bool = False,
+    allow_exceed: bool = False,
 ) -> WordStory:
     story_date = story_date or date.today()
     existing = await word_story_repo.get_by_user_and_date(
@@ -422,7 +423,12 @@ async def generate_story(
 
     if existing and not force:
         return existing
-    if existing and force and current_generation_count >= MAX_DAILY_GENERATIONS:
+    if (
+        existing
+        and force
+        and current_generation_count >= MAX_DAILY_GENERATIONS
+        and not allow_exceed
+    ):
         raise WordStoryGenerationError(
             "您今天已经连续学习了两篇文章了，学习需要循序渐进，休息一下，明天再学习吧！"
         )
@@ -505,7 +511,7 @@ async def generate_story(
             return dup
         dup_extra = dup.extra.copy() if isinstance(dup.extra, dict) else {}
         dup_count = int(dup_extra.get("generation_count") or 0)
-        if dup_count >= MAX_DAILY_GENERATIONS:
+        if dup_count >= MAX_DAILY_GENERATIONS and not allow_exceed:
             raise WordStoryGenerationError(
                 "您今天已经连续学习了两篇文章了，学习需要循序渐进，休息一下，明天再学习吧！"
             ) from exc

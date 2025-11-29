@@ -3,7 +3,7 @@
         <transition name="fade-fast">
             <div v-if="loading" class="lottie-overlay">
                 <lottie-player
-                    src="/loading-text.lottie"
+                    src="https://assets10.lottiefiles.com/packages/lf20_usmfx6bp.json"
                     background="transparent"
                     speed="1"
                     loop
@@ -88,7 +88,7 @@
                 </div>
             </el-form-item>
             <el-form-item>
-                <el-checkbox v-model="remember">记住密码</el-checkbox>
+                <el-checkbox v-model="form.remember">记住密码</el-checkbox>
             </el-form-item>
             <el-form-item>
                 <el-button
@@ -113,7 +113,6 @@
     import { useSettingsStore } from '@/store/modules/settings'
     import { useUserStore } from '@/store/modules/user'
     import { translate } from '@/i18n'
-    import '@lottiefiles/lottie-player'
     import { isPassword } from '@/utils/validate'
     import { getCaptcha } from '@/api/user'
 

@@ -14,6 +14,22 @@
                     v-loading="pageLoading"
                     element-loading-text="正在加载短文..."
                 >
+                    <transition name="fade-fast">
+                        <div
+                            v-if="storyLoading || pageLoading"
+                            class="story-loading-overlay"
+                        >
+                            <lottie-player
+                                src="/ai-loading-model.json"
+                                background="transparent"
+                                speed="1"
+                                loop
+                                autoplay
+                                style="width: 200px; height: 200px"
+                            />
+                            <p class="loading-desc">AI 正在生成短文，请稍候…</p>
+                        </div>
+                    </transition>
                     <template #header>
                         <div class="story-card__header">
                             <div>
@@ -30,7 +46,7 @@
                                 <el-button
                                     type="primary"
                                     :loading="storyLoading"
-                                    @click="handleRegenerate"
+                                    @click="handleRegenerate(false)"
                                 >
                                     <vab-remix-icon icon="refresh-line" />
                                     再学一篇
@@ -540,6 +556,8 @@
 <script setup lang="ts">
 import {
     computed,
+    defineComponent,
+    h,
     nextTick,
     onBeforeUnmount,
     onMounted,
@@ -860,6 +878,17 @@ const updateMessageContent = (
 }
 
 const storyLoading = ref(false)
+const chatSending = ref(false)
+
+const VabRemixIcon = defineComponent({
+    name: 'VabRemixIcon',
+    props: {
+        icon: { type: String, default: '' },
+    },
+    setup(props) {
+        return () => h('i', { class: ['vab-remix-icon', props.icon] })
+    },
+})
 const pageLoading = ref(true)
 const storyText = ref('')
 const currentStoryId = ref<number | null>(null)
@@ -867,6 +896,7 @@ const storyImageUrl = ref('')
 const storyImageCaption = ref('')
 const activeWordIndex = ref(0)
 const currentWords = ref<string[]>(DEFAULT_WORDS.map((item) => item.word))
+const generationCount = ref(0)
 const conversationInput = ref('')
 const activeSideTab = ref('conversation')
 const chatScrollbarRef = ref<{ setScrollTop: (value: number) => void }>()
@@ -1011,18 +1041,43 @@ const scrollChatToBottom = () => {
     chatScrollbarRef.value?.setScrollTop?.(9999)
 }
 
-const handleRegenerate = () => {
+const handleRegenerate = (allowExceed: boolean | Event = false) => {
+    const allowFlag = typeof allowExceed === 'boolean' ? allowExceed : false
+
+    // 达到上限时先弹窗，确认后再真正发起请求
+    if (generationCount.value >= 2 && !allowFlag) {
+        ElMessageBox.confirm(
+            '您今天已经连续学习了两篇文章了，学习需要循序渐进，休息一下，明天再学习吧！',
+            '温馨提示',
+            {
+                confirmButtonText: '仍然继续学习',
+                cancelButtonText: '明天再学',
+                type: 'warning',
+            }
+        )
+            .then(() => handleRegenerate(true))
+            .catch(() => {
+                /* 用户取消 */
+            })
+        return
+    }
+
     storyLoading.value = true
     generateWordStory({
         force: true,
+        allow_exceed: allowFlag,
     })
         .then((response) => {
             updateStoryState(response.data)
+            generationCount.value += 1
             ElMessage.success('已向智能体请求新的短文')
         })
-        .catch((error) => {
+        .catch(async (error: any) => {
+            const msg =
+                error?.msg ||
+                (typeof error === 'string' ? error : '再学一篇失败，请稍后重试')
             console.error(error)
-            ElMessage.error('再学一篇失败，请稍后重试')
+            ElMessage.error(msg)
         })
         .finally(() => {
             storyLoading.value = false
@@ -1380,6 +1435,13 @@ const updateStoryState = (record?: WordStoryRecord) => {
     storyText.value = (record.story_text || '').trim()
     storyImageUrl.value = record.image_url || ''
     storyImageCaption.value = record.image_caption || ''
+    generationCount.value =
+        Number(
+            record.extra?.generation_count ??
+                record.extra?.generationCount ??
+                record.extra?.generationCount ??
+                record.extra?.generation_count
+        ) || 0
     if (record.words && record.words.length) {
         currentWords.value = record.words
     }
@@ -1476,6 +1538,7 @@ watch(
         flex-direction: column;
         min-height: 0;
         overflow: hidden;
+        position: relative;
 
         :deep(.el-card__body) {
             flex: 1;
@@ -1615,6 +1678,24 @@ watch(
                     margin-bottom: 12px;
                 }
             }
+        }
+    }
+
+    .story-loading-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(2px);
+
+        .loading-desc {
+            margin-top: 8px;
+            font-weight: 600;
+            color: #4a5b73;
         }
     }
 

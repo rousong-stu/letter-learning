@@ -10,6 +10,7 @@ export type WordStoryRecord = {
     model_name?: string
     image_url?: string
     image_caption?: string
+    extra?: Record<string, any>
 }
 
 export function fetchTodayWordStory(
@@ -27,6 +28,7 @@ export function generateWordStory(payload: {
     words?: string[]
     story_date?: string
     force?: boolean
+    allow_exceed?: boolean
 }) {
     return request<WordStoryRecord>({
         url: '/word-stories/generate',
